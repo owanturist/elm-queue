@@ -16,6 +16,16 @@ singleton element =
     Queue [] [] element
 
 
+fromList : List a -> Queue a
+fromList list =
+    case List.reverse list of
+        [] ->
+            Empty
+
+        head :: outStack ->
+            Queue [] outStack head
+
+
 repeat : Int -> a -> Queue a
 repeat times element =
     if times < 1 then
@@ -89,6 +99,69 @@ map fn queue =
             Queue []
                 (List.foldl ((::) << fn) (List.map fn outStack) inStack)
                 (fn head)
+
+
+indexedMapReducer : (Int -> a -> b) -> a -> ( Int, List b ) -> ( Int, List b )
+indexedMapReducer fn element ( index, acc ) =
+    ( index + 1
+    , fn index element :: acc
+    )
+
+
+indexedMap : (Int -> a -> b) -> Queue a -> Queue b
+indexedMap fn queue =
+    case queue of
+        Empty ->
+            Empty
+
+        Queue inStack outStack head ->
+            Queue []
+                (List.foldl
+                    (indexedMapReducer fn)
+                    (List.foldr (indexedMapReducer fn) ( 1, [] ) outStack)
+                    inStack
+                    |> Tuple.second
+                )
+                (fn 0 head)
+
+
+foldReducer : (a -> b -> b) -> a -> b -> b
+foldReducer fn element acc =
+    fn element acc
+
+
+foldl : (a -> b -> b) -> b -> Queue a -> b
+foldl fn acc queue =
+    case queue of
+        Empty ->
+            acc
+
+        Queue inStack outStack head ->
+            List.foldr
+                (foldReducer fn)
+                (List.foldl
+                    (foldReducer fn)
+                    (fn head acc)
+                    outStack
+                )
+                inStack
+
+
+foldr : (a -> b -> b) -> b -> Queue a -> b
+foldr fn acc queue =
+    case queue of
+        Empty ->
+            acc
+
+        Queue inStack outStack head ->
+            List.foldl
+                (foldReducer fn)
+                (List.foldr
+                    (foldReducer fn)
+                    (fn head acc)
+                    outStack
+                )
+                inStack
 
 
 

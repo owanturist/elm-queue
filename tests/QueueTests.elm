@@ -1,80 +1,63 @@
 module QueueTests exposing (..)
 
-import Expect exposing (Expectation)
-import Fuzz exposing (Fuzzer, int, list, string)
+import Expect
+import Fuzz
 import Queue
-import Test exposing (Test, describe, test)
+import Test exposing (Test, concat, describe, fuzz, fuzz2, test)
 
 
 createSuite : Test
 createSuite =
-    describe "Create"
+    concat
         [ test "Queue.empty" <|
             \_ ->
                 Queue.toList Queue.empty
                     |> Expect.equalLists []
 
         --
-        , test "Queue.singleton" <|
-            \_ ->
-                Queue.singleton 0
+        , fuzz Fuzz.string "Queue.singleton" <|
+            \val ->
+                Queue.singleton val
                     |> Queue.toList
-                    |> Expect.equalLists [ 0 ]
+                    |> Expect.equalLists [ val ]
 
         --
-        , describe "Queue.fromList"
-            [ test "empty list" <|
-                \_ ->
-                    Queue.fromList []
-                        |> Queue.toList
-                        |> Expect.equalLists []
-            , test "singleton list" <|
-                \_ ->
-                    Queue.fromList [ 0 ]
-                        |> Queue.toList
-                        |> Expect.equalLists [ 0 ]
-            , test "batch list" <|
-                \_ ->
-                    Queue.fromList [ 0, 1, 2, 3, 4, 5 ]
-                        |> Queue.toList
-                        |> Expect.equalLists [ 0, 1, 2, 3, 4, 5 ]
-            ]
+        , fuzz (Fuzz.list Fuzz.string) "Queue.fromList" <|
+            \values ->
+                Queue.fromList values
+                    |> Queue.toList
+                    |> Expect.equalLists values
 
         --
         , describe "Queue.repeat"
-            [ test "zero times" <|
-                \_ ->
-                    Queue.repeat 0 1
+            [ fuzz Fuzz.string "zero times" <|
+                \val ->
+                    Queue.repeat 0 val
                         |> Queue.toList
-                        |> Expect.equalLists (List.repeat 0 1)
-            , test "one time" <|
-                \_ ->
-                    Queue.repeat 1 2
+                        |> Expect.equalLists (List.repeat 0 val)
+            , fuzz2 (Fuzz.intRange 1 100) Fuzz.string "multiple times" <|
+                \times val ->
+                    Queue.repeat times val
                         |> Queue.toList
-                        |> Expect.equalLists (List.repeat 1 2)
-            , test "multiple times" <|
-                \_ ->
-                    Queue.repeat 9 0
-                        |> Queue.toList
-                        |> Expect.equalLists (List.repeat 9 0)
+                        |> Expect.equalLists (List.repeat times val)
             ]
 
         --
         , describe "Queue.range"
-            [ test "lo > hi" <|
-                \_ ->
-                    Queue.range 1 0
+            [ fuzz2 (Fuzz.intRange 1 10) (Fuzz.intRange -10 0) "lo > hi" <|
+                \lo hi ->
+                    Queue.range lo hi
                         |> Queue.toList
-                        |> Expect.equalLists (List.range 1 0)
-            , test "lo == hi" <|
-                \_ ->
-                    Queue.range 0 0
+                        |> Expect.equalLists (List.range lo hi)
+            , fuzz Fuzz.int "lo == hi" <|
+                \lo ->
+                    Queue.range lo lo
                         |> Queue.toList
-                        |> Expect.equalLists (List.range 0 0)
-            , test "lo < hi" <|
-                \_ ->
-                    Queue.range -5 5
+                        |> Expect.equalLists (List.range lo lo)
+            , fuzz2 (Fuzz.intRange -10 1) (Fuzz.intRange 0 10) "lo < hi" <|
+                \lo hi ->
+                    Queue.range lo hi
                         |> Queue.toList
-                        |> Expect.equalLists (List.range -5 5)
+                        |> Expect.equalLists (List.range lo hi)
             ]
         ]

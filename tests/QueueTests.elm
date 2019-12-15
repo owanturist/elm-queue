@@ -124,6 +124,113 @@ enqueueSuite =
                     |> Queue.enqueue last
                     |> Queue.toList
                     |> Expect.equalLists [ last, 1, 2, 3, 4, 5 ]
+
+        --
+        , test "enqueue" <|
+            \_ ->
+                Queue.empty
+                    |> Queue.enqueue 0
+                    |> Queue.enqueue 1
+                    |> Queue.enqueue 2
+                    |> Queue.enqueue 3
+                    |> Queue.enqueue 4
+                    |> Queue.toList
+                    |> Expect.equalLists [ 4, 3, 2, 1, 0 ]
+
+        --
+        , fuzz (Fuzz.intRange 5 100) "dequeue" <|
+            \val ->
+                Queue.fromList [ 0, 1, 2, 3, 4 ]
+                    |> Queue.dequeue
+                    |> Tuple.second
+                    |> Queue.enqueue val
+                    |> Queue.toList
+                    |> Expect.equalLists [ val, 0, 1, 2, 3 ]
+        ]
+
+
+dequeueSuit : Test
+dequeueSuit =
+    describe "Queue.dequeue"
+        [ test "empty" <|
+            \_ ->
+                Queue.empty
+                    |> Queue.dequeue
+                    |> Expect.all
+                        [ Expect.equal Nothing << Tuple.first
+                        , Expect.equalLists [] << Queue.toList << Tuple.second
+                        ]
+
+        --
+        , fuzz Fuzz.int "singleton" <|
+            \val ->
+                Queue.singleton val
+                    |> Queue.dequeue
+                    |> Expect.all
+                        [ Expect.equal (Just val) << Tuple.first
+                        , Expect.equalLists [] << Queue.toList << Tuple.second
+                        ]
+
+        --
+        , fuzz (Fuzz.intRange 5 10) "fromList" <|
+            \val ->
+                Queue.fromList [ 0, 1, 2, 3, 4, val ]
+                    |> Queue.dequeue
+                    |> Expect.all
+                        [ Expect.equal (Just val) << Tuple.first
+                        , Expect.equalLists [ 0, 1, 2, 3, 4 ] << Queue.toList << Tuple.second
+                        ]
+
+        --
+        , fuzz Fuzz.string "repeat" <|
+            \val ->
+                Queue.repeat 3 val
+                    |> Queue.dequeue
+                    |> Expect.all
+                        [ Expect.equal (Just val) << Tuple.first
+                        , Expect.equalLists [ val, val ] << Queue.toList << Tuple.second
+                        ]
+
+        --
+        , test "range" <|
+            \_ ->
+                Queue.range 1 5
+                    |> Queue.dequeue
+                    |> Expect.all
+                        [ Expect.equal (Just 5) << Tuple.first
+                        , Expect.equalLists [ 1, 2, 3, 4 ] << Queue.toList << Tuple.second
+                        ]
+
+        --
+        , fuzz2 (Fuzz.intRange 5 10) (Fuzz.intRange 11 20) "queue" <|
+            \first second ->
+                Queue.fromList [ 0, 1, 2, 3, 4, first ]
+                    |> Queue.enqueue second
+                    |> Queue.dequeue
+                    |> Expect.all
+                        [ Expect.equal (Just first) << Tuple.first
+                        , Expect.equalLists [ second, 0, 1, 2, 3, 4 ] << Queue.toList << Tuple.second
+                        ]
+
+        --
+        , test "dequeue" <|
+            \_ ->
+                Queue.fromList [ 1, 2, 3 ]
+                    |> Queue.dequeue
+                    |> Expect.all
+                        [ Expect.equal (Just 3) << Tuple.first
+                        , Tuple.second
+                            >> Queue.dequeue
+                            >> Expect.all
+                                [ Expect.equal (Just 2) << Tuple.first
+                                , Tuple.second
+                                    >> Queue.dequeue
+                                    >> Expect.all
+                                        [ Expect.equal (Just 1) << Tuple.first
+                                        , Expect.equal Nothing << Tuple.first << Queue.dequeue << Tuple.second
+                                        ]
+                                ]
+                        ]
         ]
 
 
@@ -175,4 +282,13 @@ peekSuit =
                     |> Queue.enqueue last
                     |> Queue.peek
                     |> Expect.equal (Just first)
+
+        --
+        , fuzz (Fuzz.intRange 0 5) "dequeue" <|
+            \second ->
+                Queue.fromList [ -4, -3, -2, second, -1 ]
+                    |> Queue.dequeue
+                    |> Tuple.second
+                    |> Queue.peek
+                    |> Expect.equal (Just second)
         ]

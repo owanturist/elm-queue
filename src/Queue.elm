@@ -1,7 +1,7 @@
 module Queue exposing
     ( Queue
     , empty, singleton, fromList, repeat, range
-    , enqueue
+    , enqueue, dequeue
     , peek
     , toList
     )
@@ -18,7 +18,7 @@ module Queue exposing
 
 # Manipulation
 
-@docs enqueue
+@docs enqueue, dequeue
 
 
 # Query
@@ -143,7 +143,7 @@ rangeHelp lo hi acc =
 
     empty |> enqueue 1 |> enqueue 2 |> enqueue 3 == fromList [ 3, 2, 1 ]
 
-Adding takes constant time `O(1)`.
+It takes constant time `O(1)`.
 
 -}
 enqueue : a -> Queue a -> Queue a
@@ -156,6 +156,17 @@ enqueue element queue =
             Queue (size + 1) (element :: input) output head
 
 
+{-| Extract and remove the first element from the queue:
+
+    dequeue empty == ( Nothing, empty )
+
+    dequeue (fromList [ 1 ]) == ( Just 1, empty )
+
+    dequeue (fromList [ 1, 2, 3 ]) == ( Just 3, fromList [ 1, 2 ] )
+
+It takes constant time in average case `θ(1)` (`Ω(1)` and `O(n)` where `n` is size of the queue).
+
+-}
 dequeue : Queue a -> ( Maybe a, Queue a )
 dequeue queue =
     case queue of

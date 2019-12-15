@@ -137,6 +137,12 @@ rangeHelp lo hi acc =
 
 {-| Add an element to the queue.
 
+    enqueue 1 empty == fromList [ 1 ]
+
+    enqueue 1 (fromList [ 2, 3, 4 ]) == fromList [ 1, 2, 3, 4 ]
+
+    empty |> enqueue 1 |> enqueue 2 |> enqueue 3 == fromList [ 3, 2, 1 ]
+
 Adding takes constant time `O(1)`.
 
 -}
@@ -328,4 +334,4 @@ toList queue =
             []
 
         Queue _ input output head ->
-            List.foldl (::) input (head :: output)
+            input ++ List.foldl (::) [ head ] output

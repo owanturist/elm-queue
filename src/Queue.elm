@@ -3,7 +3,7 @@ module Queue exposing
     , empty, singleton, fromList, repeat, range
     , enqueue, dequeue
     , peek
-    , map, indexedMap, foldl, foldr
+    , map, indexedMap, foldl, foldr, filter, filterMap
     , toList
     )
 
@@ -29,7 +29,7 @@ module Queue exposing
 
 # Transform
 
-@docs map, indexedMap, foldl, foldr
+@docs map, indexedMap, foldl, foldr, filter, filterMap
 
 -}
 
@@ -38,7 +38,7 @@ module Queue exposing
 -}
 type Queue a
     = Empty
-    | Queue Int (List a) (List a) a
+    | Queue Int a (List a) (List a)
 
 
 
@@ -61,12 +61,10 @@ empty =
 
     singleton "hi" == fromList [ "hi" ]
 
-Construction takes constant time _O(1)_.
-
 -}
 singleton : a -> Queue a
 singleton element =
-    Queue 1 [] [] element
+    Queue 1 element [] []
 
 
 {-| Create a queue from `List`.
@@ -78,7 +76,7 @@ fromList : List a -> Queue a
 fromList list =
     case List.foldl fromListReverser ( 0, [] ) list of
         ( size, head :: output ) ->
-            Queue size [] output head
+            Queue size head [] output
 
         _ ->
             Empty
@@ -93,8 +91,6 @@ fromListReverser el ( count, acc ) =
 
     repeat 3 ( 0, 0 ) == fromList [ ( 0, 0 ), ( 0, 0 ), ( 0, 0 ) ]
 
-Construction takes linear time proportional to `O(n)`.
-
 -}
 repeat : Int -> a -> Queue a
 repeat n value =
@@ -102,7 +98,9 @@ repeat n value =
         Empty
 
     else
-        Queue n [] (List.repeat (n - 1) value) value
+        value
+            |> List.repeat (n - 1)
+            |> Queue n value []
 
 
 {-| Create a queue of numbers, every element increasing one.
@@ -116,8 +114,6 @@ You give the lowest and the highest number that should be in the queue.
 
     peek (range 3 6) == Just 6
 
-Construction takes linear time proportional to `O(n)`, where `n` is a length of the range.
-
 -}
 range : Int -> Int -> Queue Int
 range lo hi =
@@ -125,7 +121,9 @@ range lo hi =
         Empty
 
     else
-        Queue (hi - lo + 1) [] (rangeHelp lo hi []) hi
+        []
+            |> rangeHelp lo hi
+            |> Queue (hi - lo + 1) hi []
 
 
 rangeHelp : Int -> Int -> List Int -> List Int
@@ -156,10 +154,10 @@ enqueue : a -> Queue a -> Queue a
 enqueue element queue =
     case queue of
         Empty ->
-            Queue 1 [] [] element
+            Queue 1 element [] []
 
-        Queue size input output head ->
-            Queue (size + 1) (element :: input) output head
+        Queue size head input output ->
+            Queue (size + 1) head (element :: input) output
 
 
 {-| Extract and remove the first element from the queue:
@@ -179,19 +177,19 @@ dequeue queue =
         Empty ->
             ( Nothing, Empty )
 
-        Queue size input [] head ->
+        Queue size head input [] ->
             ( Just head
             , case List.reverse input of
                 [] ->
                     Empty
 
                 nextHead :: nextOutStack ->
-                    Queue (size - 1) [] nextOutStack nextHead
+                    Queue (size - 1) nextHead [] nextOutStack
             )
 
-        Queue size input (nextHead :: nextOutStack) head ->
+        Queue size head input (nextHead :: nextOutStack) ->
             ( Just head
-            , Queue (size - 1) input nextOutStack nextHead
+            , Queue (size - 1) nextHead input nextOutStack
             )
 
 
@@ -207,6 +205,8 @@ dequeue queue =
 
     peek (fromList 1 2 3) == Just 3
 
+It takes constant time `O(1)`.
+
 -}
 peek : Queue a -> Maybe a
 peek queue =
@@ -214,7 +214,7 @@ peek queue =
         Empty ->
             Nothing
 
-        Queue _ _ _ head ->
+        Queue _ head _ _ ->
             Just head
 
 
@@ -235,11 +235,12 @@ map fn queue =
         Empty ->
             Empty
 
-        Queue size input output head ->
-            Queue size
-                []
-                (List.foldl ((::) << fn) (List.map fn output) input)
-                (fn head)
+        Queue size head input output ->
+            List.foldr
+                ((::) << fn)
+                (List.foldl ((::) << fn) [] input)
+                output
+                |> Queue size (fn head) []
 
 
 {-| Same as map but the function is also applied to the index of each element (starting at zero):
@@ -256,23 +257,19 @@ indexedMap fn queue =
         Empty ->
             Empty
 
-        Queue size input output head ->
-            Queue
-                size
-                []
-                (List.foldr
-                    (indexedMapReducer fn)
-                    (List.foldl (indexedMapReducer fn) ( size - 1, [] ) input)
-                    output
-                    |> Tuple.second
-                )
-                (fn 0 head)
+        Queue size head input output ->
+            List.foldr
+                (indexedMapReducer fn)
+                (List.foldl (indexedMapReducer fn) ( size - 1, [] ) input)
+                output
+                |> Tuple.second
+                |> Queue size (fn 0 head) []
 
 
 indexedMapReducer : (Int -> a -> b) -> a -> ( Int, List b ) -> ( Int, List b )
-indexedMapReducer fn element ( index, acc ) =
+indexedMapReducer fn element ( index, list ) =
     ( index - 1
-    , fn index element :: acc
+    , fn index element :: list
     )
 
 
@@ -306,16 +303,10 @@ foldl fn acc queue =
         Empty ->
             acc
 
-        Queue _ input output head ->
-            List.foldr
-                (foldReducer fn)
-                (List.foldl (foldReducer fn) (fn head acc) output)
+        Queue _ head input output ->
+            List.foldr fn
+                (List.foldl fn (fn head acc) output)
                 input
-
-
-foldReducer : (a -> b -> b) -> a -> b -> b
-foldReducer fn element acc =
-    fn element acc
 
 
 {-| Reduce queue from right to left (or from the newest to oldest):
@@ -348,12 +339,63 @@ foldr fn acc queue =
         Empty ->
             acc
 
-        Queue _ input output head ->
-            List.foldr
-                (foldReducer fn)
-                (List.foldl (foldReducer fn) acc input)
+        Queue _ head input output ->
+            List.foldr fn
+                (List.foldl fn acc input)
                 output
                 |> fn head
+
+
+{-| Keep elements that satisfy the test:
+
+    filter isEven (fromList [ 1, 2, 3, 4, 5, 6 ]) == fromList [ 2, 4, 6 ]
+
+-}
+filter : (a -> Bool) -> Queue a -> Queue a
+filter fn queue =
+    case foldr (filterReducer fn) ( 0, [] ) queue of
+        ( size, head :: output ) ->
+            Queue size head [] output
+
+        _ ->
+            Empty
+
+
+filterReducer : (a -> Bool) -> a -> ( Int, List a ) -> ( Int, List a )
+filterReducer fn element (( size, list ) as acc) =
+    if fn element then
+        ( size + 1, element :: list )
+
+    else
+        acc
+
+
+{-| Filter out certain values.
+For example, maybe you have a bunch of strings from an untrusted source
+and you want to turn them into numbers:
+
+    filterMap String.toInt (fromList [ "3", "hi", "12", "4th", "May" ])
+        == fromList [ 3, 12 ]
+
+-}
+filterMap : (a -> Maybe b) -> Queue a -> Queue b
+filterMap fn queue =
+    case foldr (filterMapReducer fn) ( 0, [] ) queue of
+        ( size, head :: output ) ->
+            Queue size head [] output
+
+        _ ->
+            Empty
+
+
+filterMapReducer : (a -> Maybe b) -> a -> ( Int, List b ) -> ( Int, List b )
+filterMapReducer fn element (( size, list ) as acc) =
+    case fn element of
+        Nothing ->
+            acc
+
+        Just nextElement ->
+            ( size + 1, nextElement :: list )
 
 
 
@@ -376,7 +418,7 @@ member element queue =
         Empty ->
             False
 
-        Queue _ input output head ->
+        Queue _ head input output ->
             head == element || List.member element input || List.member element output
 
 
@@ -386,7 +428,7 @@ all check queue =
         Empty ->
             True
 
-        Queue _ input output head ->
+        Queue _ head input output ->
             check head || List.all check input || List.all check output
 
 
@@ -396,7 +438,7 @@ any check queue =
         Empty ->
             False
 
-        Queue _ input output head ->
+        Queue _ head input output ->
             check head || List.any check input || List.any check output
 
 
@@ -406,5 +448,5 @@ toList queue =
         Empty ->
             []
 
-        Queue _ input output head ->
+        Queue _ head input output ->
             input ++ List.foldl (::) [ head ] output

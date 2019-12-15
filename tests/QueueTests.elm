@@ -301,98 +301,90 @@ peekSuit =
 mapSuit : Test
 mapSuit =
     describe "Queue.map"
-        [ test "empty" <|
-            \_ ->
-                Queue.empty
-                    |> Queue.map String.length
-                    |> Queue.toList
-                    |> Expect.equalLists []
-
-        --
-        , fuzz Fuzz.string "singleton" <|
-            \val ->
-                Queue.singleton val
-                    |> Queue.map String.length
-                    |> Queue.toList
-                    |> Expect.equalLists [ String.length val ]
-
-        --
-        , fuzz (Fuzz.list Fuzz.string) "fromList" <|
+        [ fuzz (Fuzz.list Fuzz.float) "transforms" <|
             \list ->
                 Queue.fromList list
-                    |> Queue.map String.length
+                    |> Queue.map round
                     |> Queue.toList
-                    |> Expect.equalLists (List.map String.length list)
+                    |> Expect.equalLists (List.map round list)
 
         --
-        , test "range" <|
+        , test "fromList" <|
             \_ ->
-                Queue.range 0 5
+                Queue.fromList [ 1, 2, 3, 4, 5, 6 ]
                     |> Queue.map ((*) 2)
                     |> Queue.toList
-                    |> Expect.equalLists [ 0, 2, 4, 6, 8, 10 ]
+                    |> Expect.equalLists [ 2, 4, 6, 8, 10, 12 ]
 
         --
         , test "enqueue" <|
             \_ ->
                 Queue.empty
-                    |> Queue.enqueue 0
-                    |> Queue.enqueue 1
-                    |> Queue.enqueue 2
-                    |> Queue.enqueue 3
+                    |> Queue.enqueue 6
+                    |> Queue.enqueue 5
                     |> Queue.enqueue 4
-                    |> Queue.map ((+) 1)
+                    |> Queue.enqueue 3
+                    |> Queue.enqueue 2
+                    |> Queue.enqueue 1
+                    |> Queue.map ((*) 2)
                     |> Queue.toList
-                    |> Expect.equalLists [ 5, 4, 3, 2, 1 ]
+                    |> Expect.equalLists [ 2, 4, 6, 8, 10, 12 ]
+
+        --
+        , test "fromList + enqueue" <|
+            \_ ->
+                Queue.fromList [ 4, 5, 6 ]
+                    |> Queue.enqueue 3
+                    |> Queue.enqueue 2
+                    |> Queue.enqueue 1
+                    |> Queue.map ((*) 2)
+                    |> Queue.toList
+                    |> Expect.equalLists [ 2, 4, 6, 8, 10, 12 ]
         ]
 
 
 indexedMapSuit : Test
 indexedMapSuit =
     describe "Queue.indexedMap"
-        [ test "empty" <|
+        [ test "transforms" <|
             \_ ->
-                Queue.empty
-                    |> Queue.indexedMap (\i e -> ( i, String.length e ))
+                Queue.range 1 5
+                    |> Queue.indexedMap (\ind int -> String.fromInt ind ++ String.fromInt int)
                     |> Queue.toList
-                    |> Expect.equalLists []
-
-        --
-        , test "singleton" <|
-            \_ ->
-                Queue.singleton "str"
-                    |> Queue.indexedMap (\i e -> ( i, String.length e ))
-                    |> Queue.toList
-                    |> Expect.equalLists [ ( 0, 3 ) ]
+                    |> Expect.equalLists [ "41", "32", "23", "14", "05" ]
 
         --
         , test "fromList" <|
             \_ ->
-                Queue.fromList [ "a", "aa", "aaa" ]
-                    |> Queue.indexedMap (\i e -> ( i, String.length e ))
+                Queue.fromList [ 1, 2, 3, 4, 5, 6 ]
+                    |> Queue.indexedMap Tuple.pair
                     |> Queue.toList
-                    |> Expect.equalLists [ ( 2, 1 ), ( 1, 2 ), ( 0, 3 ) ]
-
-        --
-        , test "range" <|
-            \_ ->
-                Queue.range 0 5
-                    |> Queue.indexedMap (\i e -> ( i, e * 2 ))
-                    |> Queue.toList
-                    |> Expect.equalLists [ ( 5, 0 ), ( 4, 2 ), ( 3, 4 ), ( 2, 6 ), ( 1, 8 ), ( 0, 10 ) ]
+                    |> Expect.equalLists [ ( 5, 1 ), ( 4, 2 ), ( 3, 3 ), ( 2, 4 ), ( 1, 5 ), ( 0, 6 ) ]
 
         --
         , test "enqueue" <|
             \_ ->
                 Queue.empty
-                    |> Queue.enqueue 0
-                    |> Queue.enqueue 1
-                    |> Queue.enqueue 2
-                    |> Queue.enqueue 3
+                    |> Queue.enqueue 6
+                    |> Queue.enqueue 5
                     |> Queue.enqueue 4
-                    |> Queue.indexedMap (\i e -> ( i, e + 1 ))
+                    |> Queue.enqueue 3
+                    |> Queue.enqueue 2
+                    |> Queue.enqueue 1
+                    |> Queue.indexedMap Tuple.pair
                     |> Queue.toList
-                    |> Expect.equalLists [ ( 4, 5 ), ( 3, 4 ), ( 2, 3 ), ( 1, 2 ), ( 0, 1 ) ]
+                    |> Expect.equalLists [ ( 5, 1 ), ( 4, 2 ), ( 3, 3 ), ( 2, 4 ), ( 1, 5 ), ( 0, 6 ) ]
+
+        --
+        , test "fromList + enqueue" <|
+            \_ ->
+                Queue.fromList [ 4, 5, 6 ]
+                    |> Queue.enqueue 3
+                    |> Queue.enqueue 2
+                    |> Queue.enqueue 1
+                    |> Queue.indexedMap Tuple.pair
+                    |> Queue.toList
+                    |> Expect.equalLists [ ( 5, 1 ), ( 4, 2 ), ( 3, 3 ), ( 2, 4 ), ( 1, 5 ), ( 0, 6 ) ]
         ]
 
 
@@ -402,8 +394,8 @@ foldlSuite =
         [ test "fromList" <|
             \_ ->
                 Queue.fromList [ 1, 2, 3, 4, 5, 6 ]
-                    |> Queue.foldl (::) []
-                    |> Expect.equalLists [ 1, 2, 3, 4, 5, 6 ]
+                    |> Queue.foldl ((::) << String.fromInt) []
+                    |> Expect.equalLists [ "1", "2", "3", "4", "5", "6" ]
 
         --
         , test "enqueue" <|
@@ -415,8 +407,8 @@ foldlSuite =
                     |> Queue.enqueue 3
                     |> Queue.enqueue 2
                     |> Queue.enqueue 1
-                    |> Queue.foldl (::) []
-                    |> Expect.equalLists [ 1, 2, 3, 4, 5, 6 ]
+                    |> Queue.foldl ((::) << String.fromInt) []
+                    |> Expect.equalLists [ "1", "2", "3", "4", "5", "6" ]
 
         --
         , test "fromList + enqueue" <|
@@ -425,8 +417,8 @@ foldlSuite =
                     |> Queue.enqueue 3
                     |> Queue.enqueue 2
                     |> Queue.enqueue 1
-                    |> Queue.foldl (::) []
-                    |> Expect.equalLists [ 1, 2, 3, 4, 5, 6 ]
+                    |> Queue.foldl ((::) << String.fromInt) []
+                    |> Expect.equalLists [ "1", "2", "3", "4", "5", "6" ]
         ]
 
 
@@ -436,8 +428,8 @@ foldrSuite =
         [ test "fromList" <|
             \_ ->
                 Queue.fromList [ 1, 2, 3, 4, 5, 6 ]
-                    |> Queue.foldr (::) []
-                    |> Expect.equalLists [ 6, 5, 4, 3, 2, 1 ]
+                    |> Queue.foldr ((::) << String.fromInt) []
+                    |> Expect.equalLists [ "6", "5", "4", "3", "2", "1" ]
 
         --
         , test "enqueue" <|
@@ -449,8 +441,8 @@ foldrSuite =
                     |> Queue.enqueue 3
                     |> Queue.enqueue 2
                     |> Queue.enqueue 1
-                    |> Queue.foldr (::) []
-                    |> Expect.equalLists [ 6, 5, 4, 3, 2, 1 ]
+                    |> Queue.foldr ((::) << String.fromInt) []
+                    |> Expect.equalLists [ "6", "5", "4", "3", "2", "1" ]
 
         --
         , test "fromList + enqueue" <|
@@ -459,6 +451,123 @@ foldrSuite =
                     |> Queue.enqueue 3
                     |> Queue.enqueue 2
                     |> Queue.enqueue 1
-                    |> Queue.foldr (::) []
-                    |> Expect.equalLists [ 6, 5, 4, 3, 2, 1 ]
+                    |> Queue.foldr ((::) << String.fromInt) []
+                    |> Expect.equalLists [ "6", "5", "4", "3", "2", "1" ]
+        ]
+
+
+filterSuite : Test
+filterSuite =
+    describe "Queue.filter"
+        [ test "keep all" <|
+            \_ ->
+                Queue.fromList [ 1, 2, 3, 4, 5, 6 ]
+                    |> Queue.filter (always True)
+                    |> Queue.toList
+                    |> Expect.equalLists [ 1, 2, 3, 4, 5, 6 ]
+
+        --
+        , test "fromList" <|
+            \_ ->
+                Queue.fromList [ 1, 2, 3, 4, 5, 6 ]
+                    |> Queue.filter ((==) 0 << modBy 2)
+                    |> Queue.toList
+                    |> Expect.equalLists [ 2, 4, 6 ]
+
+        --
+        , test "enqueue" <|
+            \_ ->
+                Queue.empty
+                    |> Queue.enqueue 6
+                    |> Queue.enqueue 5
+                    |> Queue.enqueue 4
+                    |> Queue.enqueue 3
+                    |> Queue.enqueue 2
+                    |> Queue.enqueue 1
+                    |> Queue.filter ((==) 0 << modBy 2)
+                    |> Queue.toList
+                    |> Expect.equalLists [ 2, 4, 6 ]
+
+        --
+        , test "fromList + enqueue" <|
+            \_ ->
+                Queue.fromList [ 4, 5, 6 ]
+                    |> Queue.enqueue 3
+                    |> Queue.enqueue 2
+                    |> Queue.enqueue 1
+                    |> Queue.filter ((==) 0 << modBy 2)
+                    |> Queue.toList
+                    |> Expect.equalLists [ 2, 4, 6 ]
+        ]
+
+
+filterMapSuite : Test
+filterMapSuite =
+    describe "Queue.filterMap"
+        [ test "keep all" <|
+            \_ ->
+                Queue.fromList [ 1, 2, 3, 4, 5, 6 ]
+                    |> Queue.filterMap Just
+                    |> Queue.toList
+                    |> Expect.equalLists [ 1, 2, 3, 4, 5, 6 ]
+        , test "map all" <|
+            \_ ->
+                Queue.fromList [ 1, 2, 3, 4, 5, 6 ]
+                    |> Queue.filterMap (Just << String.fromInt)
+                    |> Queue.toList
+                    |> Expect.equalLists [ "1", "2", "3", "4", "5", "6" ]
+
+        --
+        , test "fromList" <|
+            \_ ->
+                Queue.fromList [ 1, 2, 3, 4, 5, 6 ]
+                    |> Queue.filterMap
+                        (\el ->
+                            if el > 3 then
+                                Nothing
+
+                            else
+                                Just el
+                        )
+                    |> Queue.toList
+                    |> Expect.equalLists [ 1, 2, 3 ]
+
+        --
+        , test "enqueue" <|
+            \_ ->
+                Queue.empty
+                    |> Queue.enqueue 6
+                    |> Queue.enqueue 5
+                    |> Queue.enqueue 4
+                    |> Queue.enqueue 3
+                    |> Queue.enqueue 2
+                    |> Queue.enqueue 1
+                    |> Queue.filterMap
+                        (\el ->
+                            if el > 3 then
+                                Nothing
+
+                            else
+                                Just el
+                        )
+                    |> Queue.toList
+                    |> Expect.equalLists [ 1, 2, 3 ]
+
+        --
+        , test "fromList + enqueue" <|
+            \_ ->
+                Queue.fromList [ 4, 5, 6 ]
+                    |> Queue.enqueue 3
+                    |> Queue.enqueue 2
+                    |> Queue.enqueue 1
+                    |> Queue.filterMap
+                        (\el ->
+                            if el > 3 then
+                                Nothing
+
+                            else
+                                Just el
+                        )
+                    |> Queue.toList
+                    |> Expect.equalLists [ 1, 2, 3 ]
         ]

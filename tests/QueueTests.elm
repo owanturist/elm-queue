@@ -23,23 +23,23 @@ createSuite =
 
         --
         , fuzz (Fuzz.list Fuzz.string) "Queue.fromList" <|
-            \values ->
-                Queue.fromList values
+            \list ->
+                Queue.fromList list
                     |> Queue.toList
-                    |> Expect.equalLists values
+                    |> Expect.equalLists list
 
         --
         , describe "Queue.repeat"
-            [ fuzz Fuzz.string "zero times" <|
+            [ fuzz Fuzz.string "zero n" <|
                 \val ->
                     Queue.repeat 0 val
                         |> Queue.toList
                         |> Expect.equalLists (List.repeat 0 val)
-            , fuzz2 (Fuzz.intRange 1 100) Fuzz.string "multiple times" <|
-                \times val ->
-                    Queue.repeat times val
+            , fuzz2 (Fuzz.intRange 1 100) Fuzz.string "multiple n" <|
+                \n val ->
+                    Queue.repeat n val
                         |> Queue.toList
-                        |> Expect.equalLists (List.repeat times val)
+                        |> Expect.equalLists (List.repeat n val)
             ]
 
         --
@@ -54,10 +54,38 @@ createSuite =
                     Queue.range lo lo
                         |> Queue.toList
                         |> Expect.equalLists (List.range lo lo)
-            , fuzz2 (Fuzz.intRange -10 1) (Fuzz.intRange 0 10) "lo < hi" <|
+            , fuzz2 (Fuzz.intRange -10 -1) (Fuzz.intRange 0 10) "lo < hi" <|
                 \lo hi ->
                     Queue.range lo hi
                         |> Queue.toList
                         |> Expect.equalLists (List.range lo hi)
+            ]
+        ]
+
+
+querySuit : Test
+querySuit =
+    concat
+        [ describe "Queue.peek"
+            [ test "empty" <|
+                \_ ->
+                    Queue.empty
+                        |> Queue.peek
+                        |> Expect.equal Nothing
+            , fuzz Fuzz.string "singleton" <|
+                \val ->
+                    Queue.singleton val
+                        |> Queue.peek
+                        |> Expect.equal (Just val)
+            , fuzz2 (Fuzz.intRange 1 100) Fuzz.string "repeat" <|
+                \n val ->
+                    Queue.repeat n val
+                        |> Queue.peek
+                        |> Expect.equal (Just val)
+            , fuzz2 (Fuzz.intRange -10 -1) (Fuzz.intRange 0 10) "range" <|
+                \lo hi ->
+                    Queue.range lo hi
+                        |> Queue.peek
+                        |> Expect.equal (Just hi)
             ]
         ]

@@ -1,6 +1,29 @@
-module Queue exposing (Queue, empty, fromList, range, repeat, singleton, toList)
+module Queue exposing
+    ( Queue
+    , empty, singleton, fromList, repeat, range
+    , peek
+    , toList
+    )
+
+{-| Queue FIFO (first-in first-out) data structure.
+
+@docs Queue
 
 
+# Create
+
+@docs empty, singleton, fromList, repeat, range
+
+
+# Query
+
+@docs peek
+
+-}
+
+
+{-| A queue of values.
+-}
 type Queue a
     = Empty
     | Queue (List a) (List a) a
@@ -10,16 +33,30 @@ type Queue a
 -- C R E A T E
 
 
+{-| Create an empty queue:
+
+    empty == fromList []
+
+-}
 empty : Queue a
 empty =
     Empty
 
 
+{-| Create a queue with only one element:
+
+    singleton 1234 == fromList [ 1234 ]
+
+    singleton "hi" == fromList [ "hi" ]
+
+-}
 singleton : a -> Queue a
 singleton element =
     Queue [] [] element
 
 
+{-| Create a queue from `List`.
+-}
 fromList : List a -> Queue a
 fromList list =
     case List.reverse list of
@@ -30,15 +67,32 @@ fromList list =
             Queue [] output head
 
 
+{-| Create a queue with _n_ copies of a value:
+
+    repeat 3 ( 0, 0 ) == fromList [ ( 0, 0 ), ( 0, 0 ), ( 0, 0 ) ]
+
+-}
 repeat : Int -> a -> Queue a
-repeat times element =
-    if times < 1 then
+repeat n value =
+    if n < 1 then
         Empty
 
     else
-        Queue [] (List.repeat (times - 1) element) element
+        Queue [] (List.repeat (n - 1) value) value
 
 
+{-| Create a queue of numbers, every element increasing one.
+You give the lowest and the highest number that should be in the queue.
+
+    range 3 6 == fromList [ 3, 4, 5, 6 ]
+
+    range 3 3 == fromList [ 3 ]
+
+    range 6 3 == fromList []
+
+    peek (range 3 6) == Just 6
+
+-}
 range : Int -> Int -> Queue Int
 range lo hi =
     if lo > hi then
@@ -55,6 +109,10 @@ rangeHelp lo hi acc =
 
     else
         acc
+
+
+
+-- M A N I P U L A T E
 
 
 enqueue : a -> Queue a -> Queue a
@@ -87,6 +145,29 @@ dequeue queue =
             ( Just head
             , Queue input nextOutStack nextHead
             )
+
+
+
+-- Q U E R Y
+
+
+{-| Extract the next element of a queue:
+
+    peek empty == Nothing
+
+    peek (singleton 0) == Just 0
+
+    peek (fromList 1 2 3) == Just 3
+
+-}
+peek : Queue a -> Maybe a
+peek queue =
+    case queue of
+        Empty ->
+            Nothing
+
+        Queue _ _ head ->
+            Just head
 
 
 

@@ -1,6 +1,7 @@
 module Queue exposing
     ( Queue
     , empty, singleton, fromList, repeat, range
+    , enqueue
     , peek
     , toList
     )
@@ -10,9 +11,14 @@ module Queue exposing
 @docs Queue
 
 
-# Create
+# Construction
 
 @docs empty, singleton, fromList, repeat, range
+
+
+# Manipulation
+
+@docs enqueue
 
 
 # Query
@@ -26,11 +32,11 @@ module Queue exposing
 -}
 type Queue a
     = Empty
-    | Queue (List a) (List a) a
+    | Queue Int (List a) (List a) a
 
 
 
--- C R E A T E
+-- C O N S T R U C T I O N
 
 
 {-| Create an empty queue:
@@ -49,27 +55,39 @@ empty =
 
     singleton "hi" == fromList [ "hi" ]
 
+Construction takes constant time _O(1)_.
+
 -}
 singleton : a -> Queue a
 singleton element =
-    Queue [] [] element
+    Queue 1 [] [] element
 
 
 {-| Create a queue from `List`.
+
+Construction takes linear time proportional to `O(n)`, where `n` is length of the list.
+
 -}
 fromList : List a -> Queue a
 fromList list =
-    case List.reverse list of
-        [] ->
+    case List.foldl fromListReverser ( 0, [] ) list of
+        ( size, head :: output ) ->
+            Queue size [] output head
+
+        _ ->
             Empty
 
-        head :: output ->
-            Queue [] output head
+
+fromListReverser : a -> ( Int, List a ) -> ( Int, List a )
+fromListReverser el ( count, acc ) =
+    ( count + 1, el :: acc )
 
 
 {-| Create a queue with _n_ copies of a value:
 
     repeat 3 ( 0, 0 ) == fromList [ ( 0, 0 ), ( 0, 0 ), ( 0, 0 ) ]
+
+Construction takes linear time proportional to `O(n)`.
 
 -}
 repeat : Int -> a -> Queue a
@@ -78,7 +96,7 @@ repeat n value =
         Empty
 
     else
-        Queue [] (List.repeat (n - 1) value) value
+        Queue n [] (List.repeat (n - 1) value) value
 
 
 {-| Create a queue of numbers, every element increasing one.
@@ -92,6 +110,8 @@ You give the lowest and the highest number that should be in the queue.
 
     peek (range 3 6) == Just 6
 
+Construction takes linear time proportional to `O(n)`, where `n` is a length of the range.
+
 -}
 range : Int -> Int -> Queue Int
 range lo hi =
@@ -99,7 +119,7 @@ range lo hi =
         Empty
 
     else
-        Queue [] (rangeHelp lo hi []) hi
+        Queue (hi - lo + 1) [] (rangeHelp lo hi []) hi
 
 
 rangeHelp : Int -> Int -> List Int -> List Int
@@ -115,14 +135,19 @@ rangeHelp lo hi acc =
 -- M A N I P U L A T E
 
 
+{-| Add an element to the queue.
+
+Adding takes constant time `O(1)`.
+
+-}
 enqueue : a -> Queue a -> Queue a
 enqueue element queue =
     case queue of
         Empty ->
-            Queue [] [] element
+            Queue 1 [] [] element
 
-        Queue input output head ->
-            Queue (element :: input) output head
+        Queue size input output head ->
+            Queue (size + 1) (element :: input) output head
 
 
 dequeue : Queue a -> ( Maybe a, Queue a )
@@ -131,19 +156,19 @@ dequeue queue =
         Empty ->
             ( Nothing, Empty )
 
-        Queue input [] head ->
+        Queue size input [] head ->
             ( Just head
             , case List.reverse input of
                 [] ->
                     Empty
 
                 nextHead :: nextOutStack ->
-                    Queue [] nextOutStack nextHead
+                    Queue (size - 1) [] nextOutStack nextHead
             )
 
-        Queue input (nextHead :: nextOutStack) head ->
+        Queue size input (nextHead :: nextOutStack) head ->
             ( Just head
-            , Queue input nextOutStack nextHead
+            , Queue (size - 1) input nextOutStack nextHead
             )
 
 
@@ -166,7 +191,7 @@ peek queue =
         Empty ->
             Nothing
 
-        Queue _ _ head ->
+        Queue _ _ _ head ->
             Just head
 
 
@@ -180,8 +205,9 @@ map fn queue =
         Empty ->
             Empty
 
-        Queue input output head ->
-            Queue []
+        Queue size input output head ->
+            Queue size
+                []
                 (List.foldl ((::) << fn) (List.map fn output) input)
                 (fn head)
 
@@ -199,8 +225,10 @@ indexedMap fn queue =
         Empty ->
             Empty
 
-        Queue input output head ->
-            Queue []
+        Queue size input output head ->
+            Queue
+                size
+                []
                 (List.foldl
                     (indexedMapReducer fn)
                     (List.foldr (indexedMapReducer fn) ( 1, [] ) output)
@@ -221,7 +249,7 @@ foldl fn acc queue =
         Empty ->
             acc
 
-        Queue input output head ->
+        Queue _ input output head ->
             List.foldr
                 (foldReducer fn)
                 (List.foldl
@@ -238,7 +266,7 @@ foldr fn acc queue =
         Empty ->
             acc
 
-        Queue input output head ->
+        Queue _ input output head ->
             List.foldl
                 (foldReducer fn)
                 (List.foldr
@@ -259,8 +287,8 @@ length queue =
         Empty ->
             0
 
-        Queue input output _ ->
-            List.length input + List.length output + 1
+        Queue size _ _ _ ->
+            size
 
 
 member : a -> Queue a -> Bool
@@ -269,7 +297,7 @@ member element queue =
         Empty ->
             False
 
-        Queue input output head ->
+        Queue _ input output head ->
             head == element || List.member element input || List.member element output
 
 
@@ -279,7 +307,7 @@ all check queue =
         Empty ->
             True
 
-        Queue input output head ->
+        Queue _ input output head ->
             check head || List.all check input || List.all check output
 
 
@@ -289,7 +317,7 @@ any check queue =
         Empty ->
             False
 
-        Queue input output head ->
+        Queue _ input output head ->
             check head || List.any check input || List.any check output
 
 
@@ -299,5 +327,5 @@ toList queue =
         Empty ->
             []
 
-        Queue input output head ->
+        Queue _ input output head ->
             List.foldl (::) input (head :: output)

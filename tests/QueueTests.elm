@@ -345,3 +345,52 @@ mapSuit =
                     |> Queue.toList
                     |> Expect.equalLists [ 5, 4, 3, 2, 1 ]
         ]
+
+
+indexedMapSuit : Test
+indexedMapSuit =
+    describe "Queue.indexedMap"
+        [ test "empty" <|
+            \_ ->
+                Queue.empty
+                    |> Queue.indexedMap (\i e -> ( i, String.length e ))
+                    |> Queue.toList
+                    |> Expect.equalLists []
+
+        --
+        , test "singleton" <|
+            \_ ->
+                Queue.singleton "str"
+                    |> Queue.indexedMap (\i e -> ( i, String.length e ))
+                    |> Queue.toList
+                    |> Expect.equalLists [ ( 0, 3 ) ]
+
+        --
+        , test "fromList" <|
+            \_ ->
+                Queue.fromList [ "a", "aa", "aaa" ]
+                    |> Queue.indexedMap (\i e -> ( i, String.length e ))
+                    |> Queue.toList
+                    |> Expect.equalLists [ ( 2, 1 ), ( 1, 2 ), ( 0, 3 ) ]
+
+        --
+        , test "range" <|
+            \_ ->
+                Queue.range 0 5
+                    |> Queue.indexedMap (\i e -> ( i, e * 2 ))
+                    |> Queue.toList
+                    |> Expect.equalLists [ ( 5, 0 ), ( 4, 2 ), ( 3, 4 ), ( 2, 6 ), ( 1, 8 ), ( 0, 10 ) ]
+
+        --
+        , test "enqueue" <|
+            \_ ->
+                Queue.empty
+                    |> Queue.enqueue 0
+                    |> Queue.enqueue 1
+                    |> Queue.enqueue 2
+                    |> Queue.enqueue 3
+                    |> Queue.enqueue 4
+                    |> Queue.indexedMap (\i e -> ( i, e + 1 ))
+                    |> Queue.toList
+                    |> Expect.equalLists [ ( 4, 5 ), ( 3, 4 ), ( 2, 3 ), ( 1, 2 ), ( 0, 1 ) ]
+        ]

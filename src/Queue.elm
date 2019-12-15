@@ -3,7 +3,7 @@ module Queue exposing
     , empty, singleton, fromList, repeat, range
     , enqueue, dequeue
     , peek
-    , map
+    , map, indexedMap
     , toList
     )
 
@@ -29,7 +29,7 @@ module Queue exposing
 
 # Transform
 
-@docs map
+@docs map, indexedMap
 
 -}
 
@@ -242,13 +242,14 @@ map fn queue =
                 (fn head)
 
 
-indexedMapReducer : (Int -> a -> b) -> a -> ( Int, List b ) -> ( Int, List b )
-indexedMapReducer fn element ( index, acc ) =
-    ( index + 1
-    , fn index element :: acc
-    )
+{-| Same as map but the function is also applied to the index of each element (starting at zero):
 
+    indexedMap Tuple.pair (fromList [ "A", "B", "C" ])
+        == fromList [ ( 2, "A" ), ( 1, "B" ), ( 0, "C" ) ]
 
+It takes linear time proportional to `O(n)` where `n` is size of the queue.
+
+-}
 indexedMap : (Int -> a -> b) -> Queue a -> Queue b
 indexedMap fn queue =
     case queue of
@@ -259,13 +260,20 @@ indexedMap fn queue =
             Queue
                 size
                 []
-                (List.foldl
+                (List.foldr
                     (indexedMapReducer fn)
-                    (List.foldr (indexedMapReducer fn) ( 1, [] ) output)
-                    input
+                    (List.foldl (indexedMapReducer fn) ( size - 1, [] ) input)
+                    output
                     |> Tuple.second
                 )
                 (fn 0 head)
+
+
+indexedMapReducer : (Int -> a -> b) -> a -> ( Int, List b ) -> ( Int, List b )
+indexedMapReducer fn element ( index, acc ) =
+    ( index - 1
+    , fn index element :: acc
+    )
 
 
 foldReducer : (a -> b -> b) -> a -> b -> b

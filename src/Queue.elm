@@ -2,7 +2,7 @@ module Queue exposing
     ( Queue
     , empty, singleton, fromList, repeat, range
     , enqueue, dequeue
-    , peek
+    , peek, length
     , map, indexedMap, foldl, foldr, filter, filterMap
     , toList
     )
@@ -24,7 +24,7 @@ module Queue exposing
 
 # Query
 
-@docs peek
+@docs peek, length
 
 
 # Transform
@@ -195,6 +195,23 @@ dequeue queue =
 
 
 -- Q U E R Y
+
+
+{-| Determine the length of a queue:
+
+    length empty == 0
+
+    length (fromList [ 3, 2, 1 ]) == 3
+
+-}
+length : Queue a -> Int
+length queue =
+    case queue of
+        Empty ->
+            0
+
+        Queue size _ _ _ ->
+            size
 
 
 {-| Extract the next element of a queue:
@@ -402,16 +419,6 @@ filterMapReducer fn element (( size, list ) as acc) =
 -- U T I L I T I E S
 
 
-length : Queue a -> Int
-length queue =
-    case queue of
-        Empty ->
-            0
-
-        Queue size _ _ _ ->
-            size
-
-
 member : a -> Queue a -> Bool
 member element queue =
     case queue of
@@ -444,9 +451,4 @@ any check queue =
 
 toList : Queue a -> List a
 toList queue =
-    case queue of
-        Empty ->
-            []
-
-        Queue _ head input output ->
-            input ++ List.foldl (::) [ head ] output
+    foldl (::) [] queue

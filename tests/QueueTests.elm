@@ -238,6 +238,111 @@ dequeueSuit =
 -- Q U E R Y
 
 
+lengthSuit : Test
+lengthSuit =
+    describe "Queue.length"
+        [ test "empty" <|
+            \_ ->
+                Queue.empty
+                    |> Queue.length
+                    |> Expect.equal 0
+
+        --
+        , fuzz Fuzz.string "singleton" <|
+            \val ->
+                Queue.singleton val
+                    |> Queue.length
+                    |> Expect.equal 1
+
+        --
+        , fuzz (Fuzz.list Fuzz.int) "fromList" <|
+            \list ->
+                Queue.fromList list
+                    |> Queue.length
+                    |> Expect.equal (List.length list)
+
+        --
+        , fuzz2 (Fuzz.intRange 1 100) Fuzz.string "repeat" <|
+            \n val ->
+                Queue.repeat n val
+                    |> Queue.length
+                    |> Expect.equal n
+
+        --
+        , fuzz2 (Fuzz.intRange -10 -1) (Fuzz.intRange 0 10) "range" <|
+            \lo hi ->
+                Queue.range lo hi
+                    |> Queue.length
+                    |> Expect.equal (hi - lo + 1)
+
+        --
+        , fuzz (Fuzz.list (Fuzz.intRange 0 100)) "enqueue" <|
+            \list ->
+                Queue.fromList list
+                    |> Queue.enqueue 0
+                    |> Queue.length
+                    |> Expect.equal (List.length list + 1)
+
+        --
+        , fuzz (Fuzz.list (Fuzz.intRange 0 100)) "fromList + enqueue" <|
+            \list ->
+                Queue.fromList list
+                    |> Queue.enqueue 3
+                    |> Queue.enqueue 2
+                    |> Queue.enqueue 1
+                    |> Queue.length
+                    |> Expect.equal (List.length list + 3)
+
+        --
+        , test "dequeue" <|
+            \_ ->
+                Queue.fromList [ 1, 2, 3, 4, 5 ]
+                    |> Queue.dequeue
+                    |> Tuple.second
+                    |> Queue.length
+                    |> Expect.equal 4
+
+        --
+        , fuzz (Fuzz.list (Fuzz.intRange 0 100)) "map" <|
+            \list ->
+                Queue.fromList list
+                    |> Queue.map ((*) 2)
+                    |> Queue.length
+                    |> Expect.equal (List.length list)
+
+        --
+        , fuzz (Fuzz.list (Fuzz.intRange 0 100)) "indexedMap" <|
+            \list ->
+                Queue.fromList list
+                    |> Queue.indexedMap Tuple.pair
+                    |> Queue.length
+                    |> Expect.equal (List.length list)
+
+        --
+        , test "filter" <|
+            \_ ->
+                Queue.fromList [ 1, 2, 3, 4, 5, 6 ]
+                    |> Queue.filter ((==) 0 << modBy 2)
+                    |> Queue.length
+                    |> Expect.equal 3
+
+        --
+        , test "filterMap" <|
+            \_ ->
+                Queue.fromList [ 1, 2, 3, 4, 5, 6 ]
+                    |> Queue.filterMap
+                        (\el ->
+                            if el > 3 then
+                                Nothing
+
+                            else
+                                Just el
+                        )
+                    |> Queue.length
+                    |> Expect.equal 3
+        ]
+
+
 peekSuit : Test
 peekSuit =
     describe "Queue.peek"
@@ -291,6 +396,55 @@ peekSuit =
                     |> Tuple.second
                     |> Queue.peek
                     |> Expect.equal (Just second)
+
+        --
+        , test "fromList + enqueue" <|
+            \_ ->
+                Queue.fromList [ 4, 5, 6 ]
+                    |> Queue.enqueue 3
+                    |> Queue.enqueue 2
+                    |> Queue.enqueue 1
+                    |> Queue.peek
+                    |> Expect.equal (Just 6)
+
+        --
+        , fuzz (Fuzz.intRange 6 100) "map" <|
+            \val ->
+                Queue.fromList [ 1, 2, 3, 4, 5, val ]
+                    |> Queue.map ((*) 2)
+                    |> Queue.peek
+                    |> Expect.equal (Just (val * 2))
+
+        --
+        , fuzz (Fuzz.intRange 6 100) "indexedMap" <|
+            \val ->
+                Queue.fromList [ 1, 2, 3, 4, 5, val ]
+                    |> Queue.indexedMap Tuple.pair
+                    |> Queue.peek
+                    |> Expect.equal (Just ( 0, val ))
+
+        --
+        , test "filter" <|
+            \_ ->
+                Queue.fromList [ 1, 2, 3, 4, 5, 6, 7 ]
+                    |> Queue.filter ((==) 0 << modBy 2)
+                    |> Queue.peek
+                    |> Expect.equal (Just 6)
+
+        --
+        , test "filterMap" <|
+            \_ ->
+                Queue.fromList [ 1, 2, 3, 4, 5, 6 ]
+                    |> Queue.filterMap
+                        (\el ->
+                            if el > 3 then
+                                Nothing
+
+                            else
+                                Just el
+                        )
+                    |> Queue.peek
+                    |> Expect.equal (Just 3)
         ]
 
 
@@ -510,6 +664,8 @@ filterMapSuite =
                     |> Queue.filterMap Just
                     |> Queue.toList
                     |> Expect.equalLists [ 1, 2, 3, 4, 5, 6 ]
+
+        --
         , test "map all" <|
             \_ ->
                 Queue.fromList [ 1, 2, 3, 4, 5, 6 ]

@@ -292,3 +292,56 @@ peekSuit =
                     |> Queue.peek
                     |> Expect.equal (Just second)
         ]
+
+
+
+-- T R A N S F O R M
+
+
+mapSuit : Test
+mapSuit =
+    describe "Queue.map"
+        [ test "empty" <|
+            \_ ->
+                Queue.empty
+                    |> Queue.map String.length
+                    |> Queue.toList
+                    |> Expect.equalLists []
+
+        --
+        , fuzz Fuzz.string "singleton" <|
+            \val ->
+                Queue.singleton val
+                    |> Queue.map String.length
+                    |> Queue.toList
+                    |> Expect.equalLists [ String.length val ]
+
+        --
+        , fuzz (Fuzz.list Fuzz.string) "fromList" <|
+            \list ->
+                Queue.fromList list
+                    |> Queue.map String.length
+                    |> Queue.toList
+                    |> Expect.equalLists (List.map String.length list)
+
+        --
+        , test "range" <|
+            \_ ->
+                Queue.range 0 5
+                    |> Queue.map ((*) 2)
+                    |> Queue.toList
+                    |> Expect.equalLists [ 0, 2, 4, 6, 8, 10 ]
+
+        --
+        , test "enqueue" <|
+            \_ ->
+                Queue.empty
+                    |> Queue.enqueue 0
+                    |> Queue.enqueue 1
+                    |> Queue.enqueue 2
+                    |> Queue.enqueue 3
+                    |> Queue.enqueue 4
+                    |> Queue.map ((+) 1)
+                    |> Queue.toList
+                    |> Expect.equalLists [ 5, 4, 3, 2, 1 ]
+        ]

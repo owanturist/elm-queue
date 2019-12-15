@@ -3,6 +3,7 @@ module Queue exposing
     , empty, singleton, fromList, repeat, range
     , enqueue, dequeue
     , peek
+    , map
     , toList
     )
 
@@ -24,6 +25,11 @@ module Queue exposing
 # Query
 
 @docs peek
+
+
+# Transform
+
+@docs map
 
 -}
 
@@ -216,6 +222,13 @@ peek queue =
 -- T R A N S F O R M
 
 
+{-| Apply a function to every element of a queue:
+
+    map sqrt (fromList [ 1, 4, 9 ]) == fromList [ 1, 2, 3 ]
+
+It takes linear time proportional to `O(n)` where `n` is size of the queue.
+
+-}
 map : (a -> b) -> Queue a -> Queue b
 map fn queue =
     case queue of

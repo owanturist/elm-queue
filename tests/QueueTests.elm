@@ -394,3 +394,71 @@ indexedMapSuit =
                     |> Queue.toList
                     |> Expect.equalLists [ ( 4, 5 ), ( 3, 4 ), ( 2, 3 ), ( 1, 2 ), ( 0, 1 ) ]
         ]
+
+
+foldlSuite : Test
+foldlSuite =
+    describe "Queue.foldl"
+        [ test "fromList" <|
+            \_ ->
+                Queue.fromList [ 1, 2, 3, 4, 5, 6 ]
+                    |> Queue.foldl (::) []
+                    |> Expect.equalLists [ 1, 2, 3, 4, 5, 6 ]
+
+        --
+        , test "enqueue" <|
+            \_ ->
+                Queue.empty
+                    |> Queue.enqueue 6
+                    |> Queue.enqueue 5
+                    |> Queue.enqueue 4
+                    |> Queue.enqueue 3
+                    |> Queue.enqueue 2
+                    |> Queue.enqueue 1
+                    |> Queue.foldl (::) []
+                    |> Expect.equalLists [ 1, 2, 3, 4, 5, 6 ]
+
+        --
+        , test "fromList + enqueue" <|
+            \_ ->
+                Queue.fromList [ 4, 5, 6 ]
+                    |> Queue.enqueue 3
+                    |> Queue.enqueue 2
+                    |> Queue.enqueue 1
+                    |> Queue.foldl (::) []
+                    |> Expect.equalLists [ 1, 2, 3, 4, 5, 6 ]
+        ]
+
+
+foldrSuite : Test
+foldrSuite =
+    describe "Queue.foldr"
+        [ test "fromList" <|
+            \_ ->
+                Queue.fromList [ 1, 2, 3, 4, 5, 6 ]
+                    |> Queue.foldr (::) []
+                    |> Expect.equalLists [ 6, 5, 4, 3, 2, 1 ]
+
+        --
+        , test "enqueue" <|
+            \_ ->
+                Queue.empty
+                    |> Queue.enqueue 6
+                    |> Queue.enqueue 5
+                    |> Queue.enqueue 4
+                    |> Queue.enqueue 3
+                    |> Queue.enqueue 2
+                    |> Queue.enqueue 1
+                    |> Queue.foldr (::) []
+                    |> Expect.equalLists [ 6, 5, 4, 3, 2, 1 ]
+
+        --
+        , test "fromList + enqueue" <|
+            \_ ->
+                Queue.fromList [ 4, 5, 6 ]
+                    |> Queue.enqueue 3
+                    |> Queue.enqueue 2
+                    |> Queue.enqueue 1
+                    |> Queue.foldr (::) []
+                    |> Expect.equalLists [ 6, 5, 4, 3, 2, 1 ]
+        ]

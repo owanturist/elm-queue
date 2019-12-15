@@ -3,7 +3,7 @@ module Queue exposing
     , empty, singleton, fromList, repeat, range
     , enqueue, dequeue
     , peek
-    , map, indexedMap
+    , map, indexedMap, foldl, foldr
     , toList
     )
 
@@ -29,7 +29,7 @@ module Queue exposing
 
 # Transform
 
-@docs map, indexedMap
+@docs map, indexedMap, foldl, foldr
 
 -}
 
@@ -276,11 +276,30 @@ indexedMapReducer fn element ( index, acc ) =
     )
 
 
-foldReducer : (a -> b -> b) -> a -> b -> b
-foldReducer fn element acc =
-    fn element acc
+{-| Reduce queue from left to right (or from the oldest to newest):
 
+    empty
+        |> enqueue 3
+        |> enqueue 2
+        |> enqueue 1
+        |> foldl (+) 0
+        === 6
 
+    empty
+        |> enqueue 3
+        |> enqueue 2
+        |> enqueue 1
+        |> foldl (::) []
+        == [ 1, 2, 3 ]
+
+So `foldl step state (fromList [ 1, 2, 3 ])` is like saying:
+
+    state
+        |> step 3
+        |> step 2
+        |> step 1
+
+-}
 foldl : (a -> b -> b) -> b -> Queue a -> b
 foldl fn acc queue =
     case queue of
@@ -290,14 +309,39 @@ foldl fn acc queue =
         Queue _ input output head ->
             List.foldr
                 (foldReducer fn)
-                (List.foldl
-                    (foldReducer fn)
-                    (fn head acc)
-                    output
-                )
+                (List.foldl (foldReducer fn) (fn head acc) output)
                 input
 
 
+foldReducer : (a -> b -> b) -> a -> b -> b
+foldReducer fn element acc =
+    fn element acc
+
+
+{-| Reduce queue from right to left (or from the newest to oldest):
+
+    empty
+        |> enqueue 3
+        |> enqueue 2
+        |> enqueue 1
+        |> foldr (+) 0
+        === 6
+
+    empty
+        |> enqueue 3
+        |> enqueue 2
+        |> enqueue 1
+        |> foldr (::) []
+        == [ 3, 2, 1 ]
+
+So `foldr step state (fromList [ 1, 2, 3 ])` is like saying:
+
+    state
+        |> step 1
+        |> step 2
+        |> step 3
+
+-}
 foldr : (a -> b -> b) -> b -> Queue a -> b
 foldr fn acc queue =
     case queue of
@@ -305,14 +349,11 @@ foldr fn acc queue =
             acc
 
         Queue _ input output head ->
-            List.foldl
+            List.foldr
                 (foldReducer fn)
-                (List.foldr
-                    (foldReducer fn)
-                    (fn head acc)
-                    output
-                )
-                input
+                (List.foldl (foldReducer fn) acc input)
+                output
+                |> fn head
 
 
 

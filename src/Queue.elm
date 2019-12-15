@@ -1,9 +1,13 @@
-module Queue exposing (Queue)
+module Queue exposing (Queue, empty, fromList, range, repeat, singleton, toList)
 
 
 type Queue a
     = Empty
     | Queue (List a) (List a) a
+
+
+
+-- C R E A T E
 
 
 empty : Queue a
@@ -22,8 +26,8 @@ fromList list =
         [] ->
             Empty
 
-        head :: outStack ->
-            Queue [] outStack head
+        head :: output ->
+            Queue [] output head
 
 
 repeat : Int -> a -> Queue a
@@ -41,16 +45,16 @@ range lo hi =
         Empty
 
     else
-        Queue [] (rangeHelp lo (hi - 1) []) hi
+        Queue [] (rangeHelp lo hi []) hi
 
 
 rangeHelp : Int -> Int -> List Int -> List Int
 rangeHelp lo hi acc =
-    if lo >= hi then
-        acc
+    if lo < hi then
+        rangeHelp (lo + 1) hi (lo :: acc)
 
     else
-        rangeHelp (lo + 1) hi (lo :: acc)
+        acc
 
 
 enqueue : a -> Queue a -> Queue a
@@ -59,8 +63,8 @@ enqueue element queue =
         Empty ->
             Queue [] [] element
 
-        Queue inStack outStack head ->
-            Queue (element :: inStack) outStack head
+        Queue input output head ->
+            Queue (element :: input) output head
 
 
 dequeue : Queue a -> ( Maybe a, Queue a )
@@ -69,9 +73,9 @@ dequeue queue =
         Empty ->
             ( Nothing, Empty )
 
-        Queue inStack [] head ->
+        Queue input [] head ->
             ( Just head
-            , case List.reverse inStack of
+            , case List.reverse input of
                 [] ->
                     Empty
 
@@ -79,9 +83,9 @@ dequeue queue =
                     Queue [] nextOutStack nextHead
             )
 
-        Queue inStack (nextHead :: nextOutStack) head ->
+        Queue input (nextHead :: nextOutStack) head ->
             ( Just head
-            , Queue inStack nextOutStack nextHead
+            , Queue input nextOutStack nextHead
             )
 
 
@@ -95,9 +99,9 @@ map fn queue =
         Empty ->
             Empty
 
-        Queue inStack outStack head ->
+        Queue input output head ->
             Queue []
-                (List.foldl ((::) << fn) (List.map fn outStack) inStack)
+                (List.foldl ((::) << fn) (List.map fn output) input)
                 (fn head)
 
 
@@ -114,12 +118,12 @@ indexedMap fn queue =
         Empty ->
             Empty
 
-        Queue inStack outStack head ->
+        Queue input output head ->
             Queue []
                 (List.foldl
                     (indexedMapReducer fn)
-                    (List.foldr (indexedMapReducer fn) ( 1, [] ) outStack)
-                    inStack
+                    (List.foldr (indexedMapReducer fn) ( 1, [] ) output)
+                    input
                     |> Tuple.second
                 )
                 (fn 0 head)
@@ -136,15 +140,15 @@ foldl fn acc queue =
         Empty ->
             acc
 
-        Queue inStack outStack head ->
+        Queue input output head ->
             List.foldr
                 (foldReducer fn)
                 (List.foldl
                     (foldReducer fn)
                     (fn head acc)
-                    outStack
+                    output
                 )
-                inStack
+                input
 
 
 foldr : (a -> b -> b) -> b -> Queue a -> b
@@ -153,15 +157,15 @@ foldr fn acc queue =
         Empty ->
             acc
 
-        Queue inStack outStack head ->
+        Queue input output head ->
             List.foldl
                 (foldReducer fn)
                 (List.foldr
                     (foldReducer fn)
                     (fn head acc)
-                    outStack
+                    output
                 )
-                inStack
+                input
 
 
 
@@ -174,8 +178,8 @@ length queue =
         Empty ->
             0
 
-        Queue inStack outStack _ ->
-            List.length inStack + List.length outStack + 1
+        Queue input output _ ->
+            List.length input + List.length output + 1
 
 
 member : a -> Queue a -> Bool
@@ -184,8 +188,8 @@ member element queue =
         Empty ->
             False
 
-        Queue inStack outStack head ->
-            head == element || List.member element inStack || List.member element outStack
+        Queue input output head ->
+            head == element || List.member element input || List.member element output
 
 
 all : (a -> Bool) -> Queue a -> Bool
@@ -194,8 +198,8 @@ all check queue =
         Empty ->
             True
 
-        Queue inStack outStack head ->
-            check head || List.all check inStack || List.all check outStack
+        Queue input output head ->
+            check head || List.all check input || List.all check output
 
 
 any : (a -> Bool) -> Queue a -> Bool
@@ -204,5 +208,15 @@ any check queue =
         Empty ->
             False
 
-        Queue inStack outStack head ->
-            check head || List.any check inStack || List.any check outStack
+        Queue input output head ->
+            check head || List.any check input || List.any check output
+
+
+toList : Queue a -> List a
+toList queue =
+    case queue of
+        Empty ->
+            []
+
+        Queue input output head ->
+            List.foldl (::) input (head :: output)

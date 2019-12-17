@@ -1085,5 +1085,63 @@ reverseSuite =
                     |> Queue.enqueue 1
                     |> Queue.reverse
                     |> Queue.toList
-                    |> Expect.equal [ 6, 5, 4, 3, 2, 1 ]
+                    |> Expect.equalLists [ 6, 5, 4, 3, 2, 1 ]
+        ]
+
+
+
+-- C O M B I N E
+
+
+appendSuite : Test
+appendSuite =
+    describe "Queue.append"
+        [ fuzz2 (Fuzz.list Fuzz.char) (Fuzz.list Fuzz.char) "fromList ++ fromList" <|
+            \left right ->
+                Queue.append (Queue.fromList left) (Queue.fromList right)
+                    |> Queue.toList
+                    |> Expect.equalLists (left ++ right)
+
+        --
+        , fuzz (Fuzz.list Fuzz.int) "fromList + enqueue ++ fromList" <|
+            \right ->
+                Queue.append
+                    (Queue.fromList [ 4, 5, 6 ]
+                        |> Queue.enqueue 3
+                        |> Queue.enqueue 2
+                        |> Queue.enqueue 1
+                    )
+                    (Queue.fromList right)
+                    |> Queue.toList
+                    |> Expect.equalLists ([ 1, 2, 3, 4, 5, 6 ] ++ right)
+
+        --
+        , fuzz (Fuzz.list Fuzz.int) "fromList ++ fromList + enqueue" <|
+            \left ->
+                Queue.append
+                    (Queue.fromList left)
+                    (Queue.fromList [ 4, 5, 6 ]
+                        |> Queue.enqueue 3
+                        |> Queue.enqueue 2
+                        |> Queue.enqueue 1
+                    )
+                    |> Queue.toList
+                    |> Expect.equalLists (left ++ [ 1, 2, 3, 4, 5, 6 ])
+
+        --
+        , test "fromList + enqueue ++ fromList + enqueue" <|
+            \_ ->
+                Queue.append
+                    (Queue.fromList [ 4, 5, 6 ]
+                        |> Queue.enqueue 3
+                        |> Queue.enqueue 2
+                        |> Queue.enqueue 1
+                    )
+                    (Queue.fromList [ 10, 11, 12 ]
+                        |> Queue.enqueue 9
+                        |> Queue.enqueue 8
+                        |> Queue.enqueue 7
+                    )
+                    |> Queue.toList
+                    |> Expect.equalLists (List.range 1 12)
         ]

@@ -4,6 +4,7 @@ module Queue exposing
     , enqueue, dequeue
     , peek, length, any, all, member, maximum, minimum, sum, product
     , map, indexedMap, foldl, foldr, filter, filterMap, reverse
+    , append
     , toList
     )
 
@@ -30,6 +31,11 @@ module Queue exposing
 # Transform
 
 @docs map, indexedMap, foldl, foldr, filter, filterMap, reverse
+
+
+# Combine
+
+@docs append
 
 -}
 
@@ -562,6 +568,33 @@ reverse queue =
 
                 nextHead :: nextOutput ->
                     Queue size nextHead (head :: output) nextOutput
+
+
+
+-- C O M B I N E
+
+
+{-| Put two queues together:
+
+    append (fromList [ 1, 1, 2 ]) (fromList [ 3, 5, 8 ]) == fromList [ 1, 1, 2, 3, 5, 8 ]
+
+    append (fromList [ 'a', 'b' ]) (fromList [ 'c' ]) == fromList [ 'a', 'b', 'c' ]
+
+-}
+append : Queue a -> Queue a -> Queue a
+append left right =
+    case ( left, right ) of
+        ( Empty, _ ) ->
+            right
+
+        ( _, Empty ) ->
+            left
+
+        ( Queue lSize lHead lInput lOutput, Queue rSize rHead rInput rOutput ) ->
+            Queue (lSize + rSize)
+                rHead
+                (lInput ++ List.foldl (::) (lHead :: rInput) lOutput)
+                rOutput
 
 
 

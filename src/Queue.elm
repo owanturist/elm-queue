@@ -3,7 +3,7 @@ module Queue exposing
     , empty, singleton, fromList, repeat, range
     , enqueue, dequeue
     , peek, length, any, all, member
-    , map, indexedMap, foldl, foldr, filter, filterMap
+    , map, indexedMap, foldl, foldr, filter, filterMap, reverse
     , toList
     )
 
@@ -29,7 +29,7 @@ module Queue exposing
 
 # Transform
 
-@docs map, indexedMap, foldl, foldr, filter, filterMap
+@docs map, indexedMap, foldl, foldr, filter, filterMap, reverse
 
 -}
 
@@ -468,6 +468,26 @@ filterMapReducer fn element (( size, list ) as acc) =
 
         Just nextElement ->
             ( size + 1, nextElement :: list )
+
+
+{-| Reverse the queue:
+
+    reverse (fromList [ 1, 2, 3, 4 ]) == fromList [ 4, 3, 2, 1 ]
+
+-}
+reverse : Queue a -> Queue a
+reverse queue =
+    case queue of
+        Empty ->
+            Empty
+
+        Queue size head input output ->
+            case input of
+                [] ->
+                    fromList (head :: output)
+
+                nextHead :: nextOutput ->
+                    Queue size nextHead (head :: output) nextOutput
 
 
 

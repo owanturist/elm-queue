@@ -345,6 +345,14 @@ lengthSuit =
                         )
                     |> Queue.length
                     |> Expect.equal 3
+
+        --
+        , fuzz (Fuzz.list Fuzz.int) "reverse" <|
+            \list ->
+                Queue.fromList list
+                    |> Queue.reverse
+                    |> Queue.length
+                    |> Expect.equal (List.length list)
         ]
 
 
@@ -450,6 +458,14 @@ peekSuit =
                         )
                     |> Queue.peek
                     |> Expect.equal (Just 3)
+
+        --
+        , fuzz Fuzz.int "reverse" <|
+            \val ->
+                Queue.fromList [ val, 2, 3, 4, 5, 6 ]
+                    |> Queue.reverse
+                    |> Queue.peek
+                    |> Expect.equal (Just val)
         ]
 
 
@@ -485,11 +501,11 @@ anySuit =
                         |> Expect.equal False
 
             --
-            , test "[]" <|
-                \_ ->
-                    Queue.fromList []
+            , fuzz (Fuzz.list Fuzz.int) "fuzz" <|
+                \list ->
+                    Queue.fromList list
                         |> Queue.any isEven
-                        |> Expect.equal False
+                        |> Expect.equal (List.any isEven list)
             ]
 
         --
@@ -539,6 +555,14 @@ anySuit =
                         |> Queue.any isEven
                         |> Expect.equal False
             ]
+
+        --
+        , fuzz (Fuzz.list Fuzz.int) "reverse" <|
+            \list ->
+                Queue.fromList list
+                    |> Queue.reverse
+                    |> Queue.any isEven
+                    |> Expect.equal (List.any isEven (List.reverse list))
         ]
 
 
@@ -574,11 +598,11 @@ allSuit =
                         |> Expect.equal False
 
             --
-            , test "[]" <|
-                \_ ->
-                    Queue.fromList []
+            , fuzz (Fuzz.list Fuzz.int) "fuzz" <|
+                \list ->
+                    Queue.fromList list
                         |> Queue.all isEven
-                        |> Expect.equal True
+                        |> Expect.equal (List.all isEven list)
             ]
 
         --
@@ -628,6 +652,14 @@ allSuit =
                         |> Queue.all isEven
                         |> Expect.equal True
             ]
+
+        --
+        , fuzz (Fuzz.list Fuzz.int) "reverse" <|
+            \list ->
+                Queue.fromList list
+                    |> Queue.reverse
+                    |> Queue.all isEven
+                    |> Expect.equal (List.all isEven (List.reverse list))
         ]
 
 
@@ -702,6 +734,15 @@ mapSuit =
                     |> Queue.map ((*) 2)
                     |> Queue.toList
                     |> Expect.equalLists [ 2, 4, 6, 8, 10, 12 ]
+
+        --
+        , test "reverse" <|
+            \_ ->
+                Queue.fromList [ 1, 2, 3, 4, 5, 6 ]
+                    |> Queue.reverse
+                    |> Queue.map ((*) 2)
+                    |> Queue.toList
+                    |> Expect.equalLists [ 12, 10, 8, 6, 4, 2 ]
         ]
 
 
@@ -747,6 +788,15 @@ indexedMapSuit =
                     |> Queue.indexedMap Tuple.pair
                     |> Queue.toList
                     |> Expect.equalLists [ ( 5, 1 ), ( 4, 2 ), ( 3, 3 ), ( 2, 4 ), ( 1, 5 ), ( 0, 6 ) ]
+
+        --
+        , test "reverse" <|
+            \_ ->
+                Queue.fromList [ 1, 2, 3, 4, 5, 6 ]
+                    |> Queue.reverse
+                    |> Queue.indexedMap Tuple.pair
+                    |> Queue.toList
+                    |> Expect.equalLists [ ( 5, 6 ), ( 4, 5 ), ( 3, 4 ), ( 2, 3 ), ( 1, 2 ), ( 0, 1 ) ]
         ]
 
 
@@ -934,4 +984,70 @@ filterMapSuite =
                         )
                     |> Queue.toList
                     |> Expect.equalLists [ 1, 2, 3 ]
+        ]
+
+
+reverseSuite : Test
+reverseSuite =
+    describe "Queue.reverse"
+        [ test "empty" <|
+            \_ ->
+                Queue.empty
+                    |> Queue.reverse
+                    |> Queue.toList
+                    |> Expect.equalLists []
+
+        --
+        , fuzz Fuzz.string "singleton" <|
+            \val ->
+                Queue.singleton val
+                    |> Queue.reverse
+                    |> Queue.toList
+                    |> Expect.equalLists [ val ]
+
+        --
+        , fuzz (Fuzz.list Fuzz.int) "fromList" <|
+            \list ->
+                Queue.fromList list
+                    |> Queue.reverse
+                    |> Queue.toList
+                    |> Expect.equalLists (List.reverse list)
+
+        --
+        , test "range" <|
+            \_ ->
+                Queue.range 0 5
+                    |> Queue.reverse
+                    |> Queue.toList
+                    |> Expect.equalLists [ 5, 4, 3, 2, 1, 0 ]
+
+        --
+        , fuzz2 (Fuzz.intRange 0 4) (Fuzz.intRange 5 10) "enqueue" <|
+            \first last ->
+                Queue.fromList [ -4, -3, -2, -1, first ]
+                    |> Queue.enqueue last
+                    |> Queue.reverse
+                    |> Queue.toList
+                    |> Expect.equalLists [ first, -1, -2, -3, -4, last ]
+
+        --
+        , fuzz (Fuzz.intRange 0 5) "dequeue" <|
+            \second ->
+                Queue.fromList [ -4, -3, -2, second, -1 ]
+                    |> Queue.dequeue
+                    |> Tuple.second
+                    |> Queue.reverse
+                    |> Queue.toList
+                    |> Expect.equalLists [ second, -2, -3, -4 ]
+
+        --
+        , test "fromList + enqueue" <|
+            \_ ->
+                Queue.fromList [ 4, 5, 6 ]
+                    |> Queue.enqueue 3
+                    |> Queue.enqueue 2
+                    |> Queue.enqueue 1
+                    |> Queue.reverse
+                    |> Queue.toList
+                    |> Expect.equal [ 6, 5, 4, 3, 2, 1 ]
         ]

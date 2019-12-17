@@ -369,6 +369,14 @@ lengthSuit =
                     |> Queue.concat
                     |> Queue.length
                     |> Expect.equal (List.length (List.concat listOfLists))
+
+        --
+        , fuzz (Fuzz.list Fuzz.char) "intersperse" <|
+            \list ->
+                Queue.fromList list
+                    |> Queue.intersperse '-'
+                    |> Queue.length
+                    |> Expect.equal (List.length (List.intersperse '-' list))
         ]
 
 
@@ -1206,4 +1214,41 @@ concatMapSuite =
                     |> Queue.concatMap (Queue.fromList << String.toList)
                     |> Queue.toList
                     |> Expect.equalLists (List.concatMap String.toList list)
+        ]
+
+
+intersperseSuite : Test
+intersperseSuite =
+    describe "Queue.intersperse"
+        [ fuzz (Fuzz.list Fuzz.char) "fromList" <|
+            \list ->
+                Queue.fromList list
+                    |> Queue.intersperse '-'
+                    |> Queue.toList
+                    |> Expect.equalLists (List.intersperse '-' list)
+
+        --
+        , test "enqueue" <|
+            \_ ->
+                Queue.empty
+                    |> Queue.enqueue 6
+                    |> Queue.enqueue 5
+                    |> Queue.enqueue 4
+                    |> Queue.enqueue 3
+                    |> Queue.enqueue 2
+                    |> Queue.enqueue 1
+                    |> Queue.intersperse 0
+                    |> Queue.toList
+                    |> Expect.equalLists [ 1, 0, 2, 0, 3, 0, 4, 0, 5, 0, 6 ]
+
+        --
+        , test "fromList + enqueue" <|
+            \_ ->
+                Queue.fromList [ 4, 5, 6 ]
+                    |> Queue.enqueue 3
+                    |> Queue.enqueue 2
+                    |> Queue.enqueue 1
+                    |> Queue.intersperse 0
+                    |> Queue.toList
+                    |> Expect.equalLists [ 1, 0, 2, 0, 3, 0, 4, 0, 5, 0, 6 ]
         ]

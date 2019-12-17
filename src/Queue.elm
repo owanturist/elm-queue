@@ -4,7 +4,7 @@ module Queue exposing
     , enqueue, dequeue
     , peek, length, any, all, member, maximum, minimum, sum, product
     , map, indexedMap, foldl, foldr, filter, filterMap, reverse
-    , append, concat, concatMap
+    , append, concat, concatMap, intersperse
     , toList
     )
 
@@ -35,7 +35,7 @@ module Queue exposing
 
 # Combine
 
-@docs append, concat, concatMap
+@docs append, concat, concatMap, intersperse
 
 -}
 
@@ -621,7 +621,32 @@ concatMap fn queue =
     foldl (append << fn) empty queue
 
 
+{-| Places the given value between all members of the given queue.
 
+    intersperse "on" (fromList [ "turtles", "turtles", "turtles" ])
+        == fromList [ "turtles", "on", "turtles", "on", "turtles" ]
+
+-}
+intersperse : a -> Queue a -> Queue a
+intersperse delimiter queue =
+    case queue of
+        Empty ->
+            Empty
+
+        Queue size head input output ->
+            List.foldr
+                (\el acc -> delimiter :: el :: acc)
+                (List.foldl
+                    (\el acc -> delimiter :: el :: acc)
+                    []
+                    input
+                )
+                output
+                |> Queue (size * 2 - 1) head []
+
+
+
+-- [7,6,5][2,3,4]1
 -- U T I L I T I E S
 
 

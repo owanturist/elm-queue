@@ -2,7 +2,7 @@ module Queue exposing
     ( Queue
     , empty, singleton, fromList, repeat, range
     , enqueue, dequeue
-    , peek, length, any, all, member, maximum, minimum
+    , peek, length, any, all, member, maximum, minimum, sum, product
     , map, indexedMap, foldl, foldr, filter, filterMap, reverse
     , toList
     )
@@ -24,7 +24,7 @@ module Queue exposing
 
 # Query
 
-@docs peek, length, any, all, member, maximum, minimum
+@docs peek, length, any, all, member, maximum, minimum, sum, product
 
 
 # Transform
@@ -324,6 +324,44 @@ minimum queue =
         Queue _ head input output ->
             List.foldl min (List.foldl min head output) input
                 |> Just
+
+
+{-| Get the sum of the queue elements:
+
+    sum (fromList [ 1, 2, 3 ]) == 6
+
+    sum (fromList [ 1, 1, 1 ]) == 3
+
+    sum (fromList []) == 0
+
+-}
+sum : Queue number -> number
+sum queue =
+    case queue of
+        Empty ->
+            0
+
+        Queue _ head input output ->
+            List.foldl (+) (List.foldl (+) head output) input
+
+
+{-| Get the product of the queue elements:
+
+    product (from List [ 2, 2, 2 ]) == 8
+
+    product (from List [ 3, 3, 3 ]) == 27
+
+    product (from List []) == 1
+
+-}
+product : Queue number -> number
+product queue =
+    case queue of
+        Empty ->
+            1
+
+        Queue _ head input output ->
+            List.foldl (*) (List.foldl (*) head output) input
 
 
 

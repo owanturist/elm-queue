@@ -706,6 +706,24 @@ minimumSuit =
                 |> Expect.equal (List.minimum list)
 
 
+sumSuit : Test
+sumSuit =
+    fuzz (Fuzz.list Fuzz.int) "Queue.sum" <|
+        \list ->
+            Queue.fromList list
+                |> Queue.sum
+                |> Expect.equal (List.sum list)
+
+
+productSuit : Test
+productSuit =
+    fuzz (Fuzz.list (Fuzz.intRange -10 10)) "Queue.product" <|
+        \list ->
+            Queue.fromList (List.take 10 list)
+                |> Queue.product
+                |> Expect.equal (List.product (List.take 10 list))
+
+
 
 -- T R A N S F O R M
 

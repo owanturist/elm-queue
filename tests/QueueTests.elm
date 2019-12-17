@@ -10,6 +10,11 @@ import Test exposing (Test, describe, fuzz, fuzz2, test)
 -- C O N S T R U C T I O N
 
 
+isEven : Int -> Bool
+isEven =
+    (==) 0 << modBy 2
+
+
 emptySuite : Test
 emptySuite =
     test "Queue.empty" <|
@@ -445,6 +450,209 @@ peekSuit =
                         )
                     |> Queue.peek
                     |> Expect.equal (Just 3)
+        ]
+
+
+anySuit : Test
+anySuit =
+    describe "Queue.any"
+        [ test "empty" <|
+            \_ ->
+                Queue.empty
+                    |> Queue.any isEven
+                    |> Expect.equal False
+
+        --
+        , fuzz Fuzz.int "singleton" <|
+            \val ->
+                Queue.singleton val
+                    |> Queue.any isEven
+                    |> Expect.equal (isEven val)
+
+        --
+        , describe "fromList"
+            [ test "[ 2, 3 ]" <|
+                \_ ->
+                    Queue.fromList [ 2, 3 ]
+                        |> Queue.any isEven
+                        |> Expect.equal True
+
+            --
+            , test "[ 1, 3 ]" <|
+                \_ ->
+                    Queue.fromList [ 1, 3 ]
+                        |> Queue.any isEven
+                        |> Expect.equal False
+
+            --
+            , test "[]" <|
+                \_ ->
+                    Queue.fromList []
+                        |> Queue.any isEven
+                        |> Expect.equal False
+            ]
+
+        --
+        , describe "enqueue"
+            [ test "6 5 4 3 2 1" <|
+                \_ ->
+                    Queue.empty
+                        |> Queue.enqueue 6
+                        |> Queue.enqueue 5
+                        |> Queue.enqueue 4
+                        |> Queue.enqueue 3
+                        |> Queue.enqueue 2
+                        |> Queue.enqueue 1
+                        |> Queue.any isEven
+                        |> Expect.equal True
+
+            --
+            , test "9 7 5 3 1" <|
+                \_ ->
+                    Queue.empty
+                        |> Queue.enqueue 9
+                        |> Queue.enqueue 7
+                        |> Queue.enqueue 5
+                        |> Queue.enqueue 3
+                        |> Queue.enqueue 1
+                        |> Queue.any isEven
+                        |> Expect.equal False
+            ]
+
+        --
+        , describe "fromList + enqueue"
+            [ test "6 5 4 3 2 1" <|
+                \_ ->
+                    Queue.fromList [ 4, 5, 6 ]
+                        |> Queue.enqueue 3
+                        |> Queue.enqueue 2
+                        |> Queue.enqueue 1
+                        |> Queue.any isEven
+                        |> Expect.equal True
+
+            --
+            , test "9 7 5 3 1" <|
+                \_ ->
+                    Queue.fromList [ 9, 7, 5 ]
+                        |> Queue.enqueue 3
+                        |> Queue.enqueue 1
+                        |> Queue.any isEven
+                        |> Expect.equal False
+            ]
+        ]
+
+
+allSuit : Test
+allSuit =
+    describe "Queue.all"
+        [ test "empty" <|
+            \_ ->
+                Queue.empty
+                    |> Queue.all isEven
+                    |> Expect.equal True
+
+        --
+        , fuzz Fuzz.int "singleton" <|
+            \val ->
+                Queue.singleton val
+                    |> Queue.all isEven
+                    |> Expect.equal (isEven val)
+
+        --
+        , describe "fromList"
+            [ test "[ 2, 4 ]" <|
+                \_ ->
+                    Queue.fromList [ 2, 4 ]
+                        |> Queue.all isEven
+                        |> Expect.equal True
+
+            --
+            , test "[ 2, 3 ]" <|
+                \_ ->
+                    Queue.fromList [ 2, 3 ]
+                        |> Queue.all isEven
+                        |> Expect.equal False
+
+            --
+            , test "[]" <|
+                \_ ->
+                    Queue.fromList []
+                        |> Queue.all isEven
+                        |> Expect.equal True
+            ]
+
+        --
+        , describe "enqueue"
+            [ test "6 5 4 3 2 1" <|
+                \_ ->
+                    Queue.empty
+                        |> Queue.enqueue 6
+                        |> Queue.enqueue 5
+                        |> Queue.enqueue 4
+                        |> Queue.enqueue 3
+                        |> Queue.enqueue 2
+                        |> Queue.enqueue 1
+                        |> Queue.all isEven
+                        |> Expect.equal False
+
+            --
+            , test "10 8 6 4 2" <|
+                \_ ->
+                    Queue.empty
+                        |> Queue.enqueue 10
+                        |> Queue.enqueue 8
+                        |> Queue.enqueue 6
+                        |> Queue.enqueue 4
+                        |> Queue.enqueue 2
+                        |> Queue.all isEven
+                        |> Expect.equal True
+            ]
+
+        --
+        , describe "fromList + enqueue"
+            [ test "6 5 4 3 2 1" <|
+                \_ ->
+                    Queue.fromList [ 4, 5, 6 ]
+                        |> Queue.enqueue 3
+                        |> Queue.enqueue 2
+                        |> Queue.enqueue 1
+                        |> Queue.all isEven
+                        |> Expect.equal False
+
+            --
+            , test "10 8 6 4 2" <|
+                \_ ->
+                    Queue.fromList [ 10, 8, 6 ]
+                        |> Queue.enqueue 4
+                        |> Queue.enqueue 2
+                        |> Queue.all isEven
+                        |> Expect.equal True
+            ]
+        ]
+
+
+memberSuit : Test
+memberSuit =
+    describe "Queue.member"
+        [ test "[]" <|
+            \_ ->
+                Queue.fromList []
+                    |> Queue.member 9
+                    |> Expect.equal False
+
+        --
+        , test "[ 1, 2, 3, 4 ]" <|
+            \_ ->
+                Queue.fromList [ 1, 2, 3, 4 ]
+                    |> Queue.member 9
+                    |> Expect.equal False
+
+        --
+        , test "[ 1, 2, 3, 4, 5, 6, 7, 8, 9 ]" <|
+            \_ ->
+                Queue.fromList [ 1, 2, 3, 4, 5, 6, 7, 8, 9 ]
+                    |> Queue.member 9
+                    |> Expect.equal True
         ]
 
 

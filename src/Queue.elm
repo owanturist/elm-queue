@@ -2,7 +2,7 @@ module Queue exposing
     ( Queue
     , empty, singleton, fromList, repeat, range
     , enqueue, dequeue
-    , peek, length
+    , peek, length, any, all, member
     , map, indexedMap, foldl, foldr, filter, filterMap
     , toList
     )
@@ -24,7 +24,7 @@ module Queue exposing
 
 # Query
 
-@docs peek, length
+@docs peek, length, any, all, member
 
 
 # Transform
@@ -235,6 +235,61 @@ peek queue =
             Just head
 
 
+{-| Determine if any elements satisfy some test:
+
+    any isEven (fromList [ 2, 3 ]) == True
+
+    any isEven (fromList [ 1, 3 ]) == False
+
+    any isEven (fromList []) == False
+
+-}
+any : (a -> Bool) -> Queue a -> Bool
+any check queue =
+    case queue of
+        Empty ->
+            False
+
+        Queue _ head input output ->
+            -- @see https://github.com/elm/core/blob/1.0.4/src/List.elm#L291
+            if check head then
+                True
+
+            else if List.any check input then
+                True
+
+            else
+                List.any check output
+
+
+{-| Determine if all elements satisfy some test.
+
+    all isEven (fromList [ 2, 4 ]) == True
+
+    all isEven (fromList [ 2, 3 ]) == False
+
+    all isEven (fromList []) == True
+
+-}
+all : (a -> Bool) -> Queue a -> Bool
+all check queue =
+    not (any (not << check) queue)
+
+
+{-| Figure out whether a queue contains a value.
+
+    member 9 (fromList []) == False
+
+    member 9 (fromList [ 1, 2, 3, 4 ]) == False
+
+    member 4 (fromList [ 1, 2, 3, 4 ]) == True
+
+-}
+member : a -> Queue a -> Bool
+member element queue =
+    any ((==) element) queue
+
+
 
 -- T R A N S F O R M
 
@@ -417,36 +472,6 @@ filterMapReducer fn element (( size, list ) as acc) =
 
 
 -- U T I L I T I E S
-
-
-member : a -> Queue a -> Bool
-member element queue =
-    case queue of
-        Empty ->
-            False
-
-        Queue _ head input output ->
-            head == element || List.member element input || List.member element output
-
-
-all : (a -> Bool) -> Queue a -> Bool
-all check queue =
-    case queue of
-        Empty ->
-            True
-
-        Queue _ head input output ->
-            check head || List.all check input || List.all check output
-
-
-any : (a -> Bool) -> Queue a -> Bool
-any check queue =
-    case queue of
-        Empty ->
-            False
-
-        Queue _ head input output ->
-            check head || List.any check input || List.any check output
 
 
 toList : Queue a -> List a

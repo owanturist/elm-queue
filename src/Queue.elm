@@ -2,7 +2,7 @@ module Queue exposing
     ( Queue
     , empty, singleton, fromList, repeat, range
     , enqueue, dequeue
-    , peek, length, any, all, member
+    , peek, length, any, all, member, maximum, minimum
     , map, indexedMap, foldl, foldr, filter, filterMap, reverse
     , toList
     )
@@ -24,7 +24,7 @@ module Queue exposing
 
 # Query
 
-@docs peek, length, any, all, member
+@docs peek, length, any, all, member, maximum, minimum
 
 
 # Transform
@@ -288,6 +288,42 @@ all check queue =
 member : a -> Queue a -> Bool
 member element queue =
     any ((==) element) queue
+
+
+{-| Find the maximum element in a non-empty queue:
+
+    maximum (fromList [ 1, 4, 2 ]) == Just 4
+
+    maximum (fromList []) == Nothing
+
+-}
+maximum : Queue comparable -> Maybe comparable
+maximum queue =
+    case queue of
+        Empty ->
+            Nothing
+
+        Queue _ head input output ->
+            List.foldl max (List.foldl max head output) input
+                |> Just
+
+
+{-| Find the minimum element in a non-empty queue:
+
+    minimum (fromList [ 3, 2, 1 ]) == Just 1
+
+    minimum (fromList []) == Nothing
+
+-}
+minimum : Queue comparable -> Maybe comparable
+minimum queue =
+    case queue of
+        Empty ->
+            Nothing
+
+        Queue _ head input output ->
+            List.foldl min (List.foldl min head output) input
+                |> Just
 
 
 

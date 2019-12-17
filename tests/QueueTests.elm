@@ -688,6 +688,24 @@ memberSuit =
         ]
 
 
+maximumSuit : Test
+maximumSuit =
+    fuzz (Fuzz.list Fuzz.int) "Queue.maximum" <|
+        \list ->
+            Queue.fromList list
+                |> Queue.maximum
+                |> Expect.equal (List.maximum list)
+
+
+minimumSuit : Test
+minimumSuit =
+    fuzz (Fuzz.list Fuzz.int) "Queue.minimum" <|
+        \list ->
+            Queue.fromList list
+                |> Queue.minimum
+                |> Expect.equal (List.minimum list)
+
+
 
 -- T R A N S F O R M
 

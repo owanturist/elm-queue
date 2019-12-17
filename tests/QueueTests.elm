@@ -353,6 +353,22 @@ lengthSuit =
                     |> Queue.reverse
                     |> Queue.length
                     |> Expect.equal (List.length list)
+
+        --
+        , fuzz2 (Fuzz.list Fuzz.char) (Fuzz.list Fuzz.char) "append" <|
+            \left right ->
+                Queue.append (Queue.fromList left) (Queue.fromList right)
+                    |> Queue.length
+                    |> Expect.equal (List.length left + List.length right)
+
+        --
+        , fuzz (Fuzz.list (Fuzz.list Fuzz.char)) "concat" <|
+            \listOfLists ->
+                List.map Queue.fromList listOfLists
+                    |> Queue.fromList
+                    |> Queue.concat
+                    |> Queue.length
+                    |> Expect.equal (List.length (List.concat listOfLists))
         ]
 
 
@@ -1144,4 +1160,50 @@ appendSuite =
                     )
                     |> Queue.toList
                     |> Expect.equalLists (List.range 1 12)
+        ]
+
+
+concatSuite : Test
+concatSuite =
+    describe "Queue.concat"
+        [ test "3 queues" <|
+            \_ ->
+                [ Queue.fromList [ 1, 2, 3 ]
+                , Queue.fromList [ 4, 5, 6 ]
+                , Queue.fromList [ 7, 8, 9 ]
+                ]
+                    |> Queue.fromList
+                    |> Queue.concat
+                    |> Queue.toList
+                    |> Expect.equalLists (List.range 1 9)
+
+        --
+        , fuzz (Fuzz.list (Fuzz.list Fuzz.char)) "fuzz" <|
+            \listOfLists ->
+                List.map Queue.fromList listOfLists
+                    |> Queue.fromList
+                    |> Queue.concat
+                    |> Queue.toList
+                    |> Expect.equalLists (List.concat listOfLists)
+        ]
+
+
+concatMapSuite : Test
+concatMapSuite =
+    describe "Queue.concatMap"
+        [ test "3 queues" <|
+            \_ ->
+                [ "123", "456", "789" ]
+                    |> Queue.fromList
+                    |> Queue.concatMap (Queue.fromList << String.toList)
+                    |> Queue.toList
+                    |> Expect.equalLists (String.toList "123456789")
+
+        --
+        , fuzz (Fuzz.list Fuzz.string) "fuzz" <|
+            \list ->
+                Queue.fromList list
+                    |> Queue.concatMap (Queue.fromList << String.toList)
+                    |> Queue.toList
+                    |> Expect.equalLists (List.concatMap String.toList list)
         ]

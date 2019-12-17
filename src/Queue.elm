@@ -4,7 +4,7 @@ module Queue exposing
     , enqueue, dequeue
     , peek, length, any, all, member, maximum, minimum, sum, product
     , map, indexedMap, foldl, foldr, filter, filterMap, reverse
-    , append
+    , append, concat, concatMap
     , toList
     )
 
@@ -35,7 +35,7 @@ module Queue exposing
 
 # Combine
 
-@docs append
+@docs append, concat, concatMap
 
 -}
 
@@ -595,6 +595,30 @@ append left right =
                 rHead
                 (lInput ++ List.foldl (::) (lHead :: rInput) lOutput)
                 rOutput
+
+
+{-| Concatenate a bunch of queues into a single queue:
+
+    concat
+        (fromList
+            [ fromList [ 1, 2 ]
+            , fromList [ 3 ]
+            , fromList [ 4, 5 ]
+            ]
+        )
+        == fromList [ 1, 2, 3, 4, 5 ]
+
+-}
+concat : Queue (Queue a) -> Queue a
+concat queueOfQueues =
+    foldl append empty queueOfQueues
+
+
+{-| Map a given function onto a queue and flatten the resulting queues:
+-}
+concatMap : (a -> Queue b) -> Queue a -> Queue b
+concatMap fn queue =
+    foldl (append << fn) empty queue
 
 
 

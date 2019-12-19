@@ -187,18 +187,32 @@ take n queue =
         Empty ->
             Empty
 
-        Queue peek size _ input output ->
+        Queue peek sizeIn sizeOut input output ->
             if n <= 0 then
                 Empty
 
-            else if n >= size then
-                queue
-
             else if n == 1 then
-                singleton peek
+                Queue peek 0 0 [] []
+
+            else if n - 1 < sizeOut then
+                Queue peek 0 (n - 1) [] (List.take (n - 1) output)
+
+            else if n - 1 == sizeOut then
+                Queue peek 0 sizeOut [] output
+
+            else if n - 1 < sizeOut + sizeIn then
+                Queue peek
+                    (n - 1 - sizeOut)
+                    sizeOut
+                    (List.drop (1 + sizeIn + sizeOut - n) input)
+                    output
 
             else
-                Empty
+                queue
+
+
+
+-- [7,6,5][2,3,4]1
 
 
 {-| Convert a queue (FIFO) to list (LIFO):

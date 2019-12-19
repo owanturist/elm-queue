@@ -3,7 +3,7 @@ module QueueTests exposing (..)
 import Expect
 import Fuzz
 import Queue
-import Test exposing (Test, describe, fuzz, fuzz2, test)
+import Test exposing (Test, describe, fuzz, fuzz2, fuzz3, test)
 
 
 
@@ -212,6 +212,24 @@ tailSuite =
                     (List.reverse list
                         |> List.tail
                         |> Maybe.map List.reverse
+                    )
+
+
+takeSuite : Test
+takeSuite =
+    fuzz3 (Fuzz.list Fuzz.char) (Fuzz.tuple3 ( Fuzz.char, Fuzz.char, Fuzz.char )) Fuzz.int "Queue.take" <|
+        \list ( a, b, c ) n ->
+            Queue.fromList list
+                |> Queue.enqueue c
+                |> Queue.enqueue b
+                |> Queue.enqueue a
+                |> Queue.take n
+                |> Queue.toList
+                |> Expect.equalLists
+                    ((a :: b :: c :: list)
+                        |> List.reverse
+                        |> List.take n
+                        |> List.reverse
                     )
 
 

@@ -2,7 +2,7 @@ module Queue exposing
     ( Queue
     , empty, singleton, fromList, repeat, range
     , enqueue, dequeue
-    , length, isEmpty, head, any, all, member, maximum, minimum, sum, product
+    , length, isEmpty, head, tail, any, all, member, maximum, minimum, sum, product
     , map, indexedMap, foldl, foldr, filter, filterMap, reverse
     , append, concat, concatMap, intersperse, map2, map3, map4, map5
     , toList
@@ -25,7 +25,7 @@ module Queue exposing
 
 # Query
 
-@docs length, isEmpty, head, any, all, member, maximum, minimum, sum, product
+@docs length, isEmpty, head, tail, any, all, member, maximum, minimum, sum, product
 
 
 # Transform
@@ -251,6 +251,16 @@ head queue =
 
         Queue _ peek _ _ ->
             Just peek
+
+
+tail : Queue a -> Maybe (Queue a)
+tail queue =
+    case dequeue queue of
+        ( Nothing, _ ) ->
+            Nothing
+
+        ( _, tailQueue ) ->
+            Just tailQueue
 
 
 {-| Determine if any elements satisfy some test:

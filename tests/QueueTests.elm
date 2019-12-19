@@ -299,13 +299,21 @@ lengthSuit =
                     |> Expect.equal (List.length list + 3)
 
         --
-        , test "dequeue" <|
-            \_ ->
-                Queue.fromList [ 1, 2, 3, 4, 5 ]
+        , fuzz (Fuzz.list Fuzz.char) "dequeue" <|
+            \list ->
+                Queue.fromList list
                     |> Queue.dequeue
                     |> Tuple.second
                     |> Queue.length
-                    |> Expect.equal 4
+                    |> Expect.equal (max 0 (List.length list - 1))
+
+        --
+        , fuzz (Fuzz.list Fuzz.char) "tail" <|
+            \list ->
+                Queue.fromList list
+                    |> Queue.tail
+                    |> Maybe.map Queue.length
+                    |> Expect.equal (Maybe.map List.length (List.tail list))
 
         --
         , fuzz (Fuzz.list (Fuzz.intRange 0 100)) "map" <|
@@ -507,6 +515,20 @@ headSuit =
                     |> Queue.head
                     |> Expect.equal (Just val)
         ]
+
+
+tailSuite : Test
+tailSuite =
+    fuzz (Fuzz.list Fuzz.char) "Queue.tail" <|
+        \list ->
+            Queue.fromList list
+                |> Queue.tail
+                |> Maybe.map Queue.toList
+                |> Expect.equal
+                    (List.reverse list
+                        |> List.tail
+                        |> Maybe.map List.reverse
+                    )
 
 
 anySuit : Test

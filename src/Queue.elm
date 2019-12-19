@@ -2,7 +2,7 @@ module Queue exposing
     ( Queue
     , empty, singleton, fromList, repeat, range
     , enqueue, dequeue
-    , head, length, any, all, member, maximum, minimum, sum, product
+    , length, isEmpty, head, any, all, member, maximum, minimum, sum, product
     , map, indexedMap, foldl, foldr, filter, filterMap, reverse
     , append, concat, concatMap, intersperse, map2, map3, map4, map5
     , toList
@@ -25,7 +25,7 @@ module Queue exposing
 
 # Query
 
-@docs head, length, any, all, member, maximum, minimum, sum, product
+@docs length, isEmpty, head, any, all, member, maximum, minimum, sum, product
 
 
 # Transform
@@ -218,6 +218,18 @@ length queue =
 
         Queue size _ _ _ ->
             size
+
+
+{-| Determine if a queue is empty.
+
+    isEmpty (fromList []) == True
+
+    isEmpty (fromList [ 1, 2, 3 ]) == False
+
+-}
+isEmpty : Queue a -> Bool
+isEmpty =
+    (==) Empty
 
 
 {-| Extract the next element of a queue:

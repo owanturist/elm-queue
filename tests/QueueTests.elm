@@ -387,6 +387,15 @@ lengthSuit =
         ]
 
 
+isEmptySuite : Test
+isEmptySuite =
+    fuzz (Fuzz.list Fuzz.char) "Queue.isEmpty" <|
+        \list ->
+            Queue.fromList list
+                |> Queue.isEmpty
+                |> Expect.equal (List.isEmpty list)
+
+
 headSuit : Test
 headSuit =
     describe "Queue.head"

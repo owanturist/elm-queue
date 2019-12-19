@@ -7,7 +7,7 @@ import Test exposing (Test, describe, fuzz, fuzz2, test)
 
 
 
--- C O N S T R U C T I O N
+-- C O N S T R U C T
 
 
 isEven : Int -> Bool
@@ -82,6 +82,137 @@ rangeSuite =
                     |> Queue.toList
                     |> Expect.equalLists (List.range lo hi)
         ]
+
+
+
+-- D E C O N S T R U C T
+
+
+headSuit : Test
+headSuit =
+    describe "Queue.head"
+        [ test "empty" <|
+            \_ ->
+                Queue.empty
+                    |> Queue.head
+                    |> Expect.equal Nothing
+
+        --
+        , fuzz Fuzz.string "singleton" <|
+            \val ->
+                Queue.singleton val
+                    |> Queue.head
+                    |> Expect.equal (Just val)
+
+        --
+        , fuzz2 Fuzz.int Fuzz.int "fromList" <|
+            \first second ->
+                Queue.fromList [ first, second ]
+                    |> Queue.head
+                    |> Expect.equal (Just second)
+
+        --
+        , fuzz2 (Fuzz.intRange 1 100) Fuzz.string "repeat" <|
+            \n val ->
+                Queue.repeat n val
+                    |> Queue.head
+                    |> Expect.equal (Just val)
+
+        --
+        , fuzz2 (Fuzz.intRange -10 -1) (Fuzz.intRange 0 10) "range" <|
+            \lo hi ->
+                Queue.range lo hi
+                    |> Queue.head
+                    |> Expect.equal (Just hi)
+
+        --
+        , fuzz2 (Fuzz.intRange 0 4) (Fuzz.intRange 5 10) "enqueue" <|
+            \first last ->
+                Queue.fromList [ -4, -3, -2, -1, first ]
+                    |> Queue.enqueue last
+                    |> Queue.head
+                    |> Expect.equal (Just first)
+
+        --
+        , fuzz (Fuzz.intRange 0 5) "dequeue" <|
+            \second ->
+                Queue.fromList [ -4, -3, -2, second, -1 ]
+                    |> Queue.dequeue
+                    |> Tuple.second
+                    |> Queue.head
+                    |> Expect.equal (Just second)
+
+        --
+        , test "fromList + enqueue" <|
+            \_ ->
+                Queue.fromList [ 4, 5, 6 ]
+                    |> Queue.enqueue 3
+                    |> Queue.enqueue 2
+                    |> Queue.enqueue 1
+                    |> Queue.head
+                    |> Expect.equal (Just 6)
+
+        --
+        , fuzz (Fuzz.intRange 6 100) "map" <|
+            \val ->
+                Queue.fromList [ 1, 2, 3, 4, 5, val ]
+                    |> Queue.map ((*) 2)
+                    |> Queue.head
+                    |> Expect.equal (Just (val * 2))
+
+        --
+        , fuzz (Fuzz.intRange 6 100) "indexedMap" <|
+            \val ->
+                Queue.fromList [ 1, 2, 3, 4, 5, val ]
+                    |> Queue.indexedMap Tuple.pair
+                    |> Queue.head
+                    |> Expect.equal (Just ( 0, val ))
+
+        --
+        , test "filter" <|
+            \_ ->
+                Queue.fromList [ 1, 2, 3, 4, 5, 6, 7 ]
+                    |> Queue.filter ((==) 0 << modBy 2)
+                    |> Queue.head
+                    |> Expect.equal (Just 6)
+
+        --
+        , test "filterMap" <|
+            \_ ->
+                Queue.fromList [ 1, 2, 3, 4, 5, 6 ]
+                    |> Queue.filterMap
+                        (\el ->
+                            if el > 3 then
+                                Nothing
+
+                            else
+                                Just el
+                        )
+                    |> Queue.head
+                    |> Expect.equal (Just 3)
+
+        --
+        , fuzz Fuzz.int "reverse" <|
+            \val ->
+                Queue.fromList [ val, 2, 3, 4, 5, 6 ]
+                    |> Queue.reverse
+                    |> Queue.head
+                    |> Expect.equal (Just val)
+        ]
+
+
+tailSuite : Test
+tailSuite =
+    fuzz (Fuzz.list Fuzz.char) "Queue.tail" <|
+        \list ->
+            Queue.fromList list
+                |> Queue.tail
+                |> Maybe.map Queue.toList
+                |> Expect.equal
+                    (List.reverse list
+                        |> List.tail
+                        |> Maybe.map List.reverse
+                    )
 
 
 
@@ -332,27 +463,28 @@ lengthSuit =
                     |> Expect.equal (List.length list)
 
         --
-        , test "filter" <|
-            \_ ->
-                Queue.fromList [ 1, 2, 3, 4, 5, 6 ]
-                    |> Queue.filter ((==) 0 << modBy 2)
+        , fuzz (Fuzz.list Fuzz.int) "filter" <|
+            \list ->
+                Queue.fromList list
+                    |> Queue.filter ((>) 0)
                     |> Queue.length
-                    |> Expect.equal 3
+                    |> Expect.equal (List.length (List.filter ((>) 0) list))
 
         --
-        , test "filterMap" <|
-            \_ ->
-                Queue.fromList [ 1, 2, 3, 4, 5, 6 ]
-                    |> Queue.filterMap
-                        (\el ->
-                            if el > 3 then
-                                Nothing
+        , fuzz (Fuzz.list Fuzz.int) "filterMap" <|
+            \list ->
+                let
+                    fn el =
+                        if el > 0 then
+                            Nothing
 
-                            else
-                                Just el
-                        )
+                        else
+                            Just el
+                in
+                Queue.fromList list
+                    |> Queue.filterMap fn
                     |> Queue.length
-                    |> Expect.equal 3
+                    |> Expect.equal (List.length (List.filterMap fn list))
 
         --
         , fuzz (Fuzz.list Fuzz.int) "reverse" <|
@@ -402,133 +534,6 @@ isEmptySuite =
             Queue.fromList list
                 |> Queue.isEmpty
                 |> Expect.equal (List.isEmpty list)
-
-
-headSuit : Test
-headSuit =
-    describe "Queue.head"
-        [ test "empty" <|
-            \_ ->
-                Queue.empty
-                    |> Queue.head
-                    |> Expect.equal Nothing
-
-        --
-        , fuzz Fuzz.string "singleton" <|
-            \val ->
-                Queue.singleton val
-                    |> Queue.head
-                    |> Expect.equal (Just val)
-
-        --
-        , fuzz2 Fuzz.int Fuzz.int "fromList" <|
-            \first second ->
-                Queue.fromList [ first, second ]
-                    |> Queue.head
-                    |> Expect.equal (Just second)
-
-        --
-        , fuzz2 (Fuzz.intRange 1 100) Fuzz.string "repeat" <|
-            \n val ->
-                Queue.repeat n val
-                    |> Queue.head
-                    |> Expect.equal (Just val)
-
-        --
-        , fuzz2 (Fuzz.intRange -10 -1) (Fuzz.intRange 0 10) "range" <|
-            \lo hi ->
-                Queue.range lo hi
-                    |> Queue.head
-                    |> Expect.equal (Just hi)
-
-        --
-        , fuzz2 (Fuzz.intRange 0 4) (Fuzz.intRange 5 10) "enqueue" <|
-            \first last ->
-                Queue.fromList [ -4, -3, -2, -1, first ]
-                    |> Queue.enqueue last
-                    |> Queue.head
-                    |> Expect.equal (Just first)
-
-        --
-        , fuzz (Fuzz.intRange 0 5) "dequeue" <|
-            \second ->
-                Queue.fromList [ -4, -3, -2, second, -1 ]
-                    |> Queue.dequeue
-                    |> Tuple.second
-                    |> Queue.head
-                    |> Expect.equal (Just second)
-
-        --
-        , test "fromList + enqueue" <|
-            \_ ->
-                Queue.fromList [ 4, 5, 6 ]
-                    |> Queue.enqueue 3
-                    |> Queue.enqueue 2
-                    |> Queue.enqueue 1
-                    |> Queue.head
-                    |> Expect.equal (Just 6)
-
-        --
-        , fuzz (Fuzz.intRange 6 100) "map" <|
-            \val ->
-                Queue.fromList [ 1, 2, 3, 4, 5, val ]
-                    |> Queue.map ((*) 2)
-                    |> Queue.head
-                    |> Expect.equal (Just (val * 2))
-
-        --
-        , fuzz (Fuzz.intRange 6 100) "indexedMap" <|
-            \val ->
-                Queue.fromList [ 1, 2, 3, 4, 5, val ]
-                    |> Queue.indexedMap Tuple.pair
-                    |> Queue.head
-                    |> Expect.equal (Just ( 0, val ))
-
-        --
-        , test "filter" <|
-            \_ ->
-                Queue.fromList [ 1, 2, 3, 4, 5, 6, 7 ]
-                    |> Queue.filter ((==) 0 << modBy 2)
-                    |> Queue.head
-                    |> Expect.equal (Just 6)
-
-        --
-        , test "filterMap" <|
-            \_ ->
-                Queue.fromList [ 1, 2, 3, 4, 5, 6 ]
-                    |> Queue.filterMap
-                        (\el ->
-                            if el > 3 then
-                                Nothing
-
-                            else
-                                Just el
-                        )
-                    |> Queue.head
-                    |> Expect.equal (Just 3)
-
-        --
-        , fuzz Fuzz.int "reverse" <|
-            \val ->
-                Queue.fromList [ val, 2, 3, 4, 5, 6 ]
-                    |> Queue.reverse
-                    |> Queue.head
-                    |> Expect.equal (Just val)
-        ]
-
-
-tailSuite : Test
-tailSuite =
-    fuzz (Fuzz.list Fuzz.char) "Queue.tail" <|
-        \list ->
-            Queue.fromList list
-                |> Queue.tail
-                |> Maybe.map Queue.toList
-                |> Expect.equal
-                    (List.reverse list
-                        |> List.tail
-                        |> Maybe.map List.reverse
-                    )
 
 
 anySuit : Test

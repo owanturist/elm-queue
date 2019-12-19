@@ -1,11 +1,11 @@
 module Queue exposing
     ( Queue
     , empty, singleton, fromList, repeat, range
+    , head, tail, take, toList
     , enqueue, dequeue
-    , length, isEmpty, head, tail, any, all, member, maximum, minimum, sum, product
+    , length, isEmpty, any, all, member, maximum, minimum, sum, product
     , map, indexedMap, foldl, foldr, filter, filterMap, reverse
     , append, concat, concatMap, intersperse, map2, map3, map4, map5
-    , toList
     )
 
 {-| Queue FIFO (first-in first-out) data structure.
@@ -13,9 +13,14 @@ module Queue exposing
 @docs Queue
 
 
-# Construction
+# Construct
 
 @docs empty, singleton, fromList, repeat, range
+
+
+# Deconstruct
+
+@docs head, tail, take, toList
 
 
 # Manipulation
@@ -25,7 +30,7 @@ module Queue exposing
 
 # Query
 
-@docs length, isEmpty, head, tail, any, all, member, maximum, minimum, sum, product
+@docs length, isEmpty, any, all, member, maximum, minimum, sum, product
 
 
 # Transform
@@ -44,7 +49,7 @@ module Queue exposing
 -}
 type Queue a
     = Empty
-    | Queue Int a (List a) (List a)
+    | Queue a Int Int (List a) (List a)
 
 
 
@@ -70,19 +75,19 @@ empty =
 -}
 singleton : a -> Queue a
 singleton element =
-    Queue 1 element [] []
+    Queue element 0 0 [] []
 
 
 {-| Create a queue from `List`.
 
-Construction takes linear time proportional to `O(n)`, where `n` is length of the list.
+Construct takes linear time proportional to `O(n)`, where `n` is length of the list.
 
 -}
 fromList : List a -> Queue a
 fromList list =
     case List.foldl fromListReverser ( 0, [] ) list of
         ( size, peek :: output ) ->
-            Queue size peek [] output
+            Queue peek 0 (size - 1) [] output
 
         _ ->
             Empty
@@ -106,7 +111,7 @@ repeat n value =
     else
         value
             |> List.repeat (n - 1)
-            |> Queue n value []
+            |> Queue value 0 (n - 1) []
 
 
 {-| Create a queue of numbers, every element increasing one.
@@ -129,7 +134,7 @@ range lo hi =
     else
         []
             |> rangeHelp lo hi
-            |> Queue (hi - lo + 1) hi []
+            |> Queue hi 0 (hi - lo) []
 
 
 rangeHelp : Int -> Int -> List Int -> List Int
@@ -139,6 +144,78 @@ rangeHelp lo hi acc =
 
     else
         acc
+
+
+
+-- D E C O N S T R U C T
+
+
+{-| Extract the next element of a queue:
+
+    head empty == Nothing
+
+    head (singleton 0) == Just 0
+
+    head (fromList 1 2 3) == Just 3
+
+It takes constant time `O(1)`.
+
+-}
+head : Queue a -> Maybe a
+head queue =
+    case queue of
+        Empty ->
+            Nothing
+
+        Queue peek _ _ _ _ ->
+            Just peek
+
+
+tail : Queue a -> Maybe (Queue a)
+tail queue =
+    case dequeue queue of
+        ( Nothing, _ ) ->
+            Nothing
+
+        ( _, tailQueue ) ->
+            Just tailQueue
+
+
+take : Int -> Queue a -> Queue a
+take n queue =
+    case queue of
+        Empty ->
+            Empty
+
+        Queue peek size _ input output ->
+            if n <= 0 then
+                Empty
+
+            else if n >= size then
+                queue
+
+            else if n == 1 then
+                singleton peek
+
+            else
+                Empty
+
+
+{-| Convert a queue (FIFO) to list (LIFO):
+
+    toList (fromList [ 1, 2, 3 ]) == [ 1, 2, 3 ]
+
+    empty
+        |> enqueue 3
+        |> enqueue 2
+        |> enqueue 1
+        |> toList
+        == [ 1, 2, 3 ]
+
+-}
+toList : Queue a -> List a
+toList queue =
+    foldl (::) [] queue
 
 
 
@@ -160,10 +237,10 @@ enqueue : a -> Queue a -> Queue a
 enqueue element queue =
     case queue of
         Empty ->
-            Queue 1 element [] []
+            Queue element 0 0 [] []
 
-        Queue size peek input output ->
-            Queue (size + 1) peek (element :: input) output
+        Queue peek sizeIn sizeOut input output ->
+            Queue peek (sizeIn + 1) sizeOut (element :: input) output
 
 
 {-| Extract and remove the first element from the queue:
@@ -183,19 +260,19 @@ dequeue queue =
         Empty ->
             ( Nothing, Empty )
 
-        Queue size peek input [] ->
+        Queue peek sizeIn _ input [] ->
             ( Just peek
             , case List.reverse input of
                 [] ->
                     Empty
 
                 nextPeek :: nextOutStack ->
-                    Queue (size - 1) nextPeek [] nextOutStack
+                    Queue nextPeek 0 (sizeIn - 1) [] nextOutStack
             )
 
-        Queue size peek input (nextPeek :: nextOutStack) ->
+        Queue peek sizeIn sizeOut input (nextPeek :: nextOutStack) ->
             ( Just peek
-            , Queue (size - 1) nextPeek input nextOutStack
+            , Queue nextPeek sizeIn (sizeOut - 1) input nextOutStack
             )
 
 
@@ -216,8 +293,8 @@ length queue =
         Empty ->
             0
 
-        Queue size _ _ _ ->
-            size
+        Queue _ sizeIn sizeOut _ _ ->
+            sizeIn + sizeOut + 1
 
 
 {-| Determine if a queue is empty.
@@ -230,37 +307,6 @@ length queue =
 isEmpty : Queue a -> Bool
 isEmpty =
     (==) Empty
-
-
-{-| Extract the next element of a queue:
-
-    head empty == Nothing
-
-    head (singleton 0) == Just 0
-
-    head (fromList 1 2 3) == Just 3
-
-It takes constant time `O(1)`.
-
--}
-head : Queue a -> Maybe a
-head queue =
-    case queue of
-        Empty ->
-            Nothing
-
-        Queue _ peek _ _ ->
-            Just peek
-
-
-tail : Queue a -> Maybe (Queue a)
-tail queue =
-    case dequeue queue of
-        ( Nothing, _ ) ->
-            Nothing
-
-        ( _, tailQueue ) ->
-            Just tailQueue
 
 
 {-| Determine if any elements satisfy some test:
@@ -278,7 +324,7 @@ any check queue =
         Empty ->
             False
 
-        Queue _ peek input output ->
+        Queue peek _ _ input output ->
             -- @see https://github.com/elm/core/blob/1.0.4/src/List.elm#L291
             if check peek then
                 True
@@ -331,7 +377,7 @@ maximum queue =
         Empty ->
             Nothing
 
-        Queue _ peek input output ->
+        Queue peek _ _ input output ->
             List.foldl max (List.foldl max peek output) input
                 |> Just
 
@@ -349,7 +395,7 @@ minimum queue =
         Empty ->
             Nothing
 
-        Queue _ peek input output ->
+        Queue peek _ _ input output ->
             List.foldl min (List.foldl min peek output) input
                 |> Just
 
@@ -369,7 +415,7 @@ sum queue =
         Empty ->
             0
 
-        Queue _ peek input output ->
+        Queue peek _ _ input output ->
             List.foldl (+) (List.foldl (+) peek output) input
 
 
@@ -388,7 +434,7 @@ product queue =
         Empty ->
             1
 
-        Queue _ peek input output ->
+        Queue peek _ _ input output ->
             List.foldl (*) (List.foldl (*) peek output) input
 
 
@@ -409,12 +455,12 @@ map fn queue =
         Empty ->
             Empty
 
-        Queue size peek input output ->
+        Queue peek sizeIn sizeOut input output ->
             List.foldr
                 ((::) << fn)
                 (List.foldl ((::) << fn) [] input)
                 output
-                |> Queue size (fn peek) []
+                |> Queue (fn peek) 0 (sizeIn + sizeOut) []
 
 
 {-| Same as map but the function is also applied to the index of each element (starting at zero):
@@ -431,13 +477,13 @@ indexedMap fn queue =
         Empty ->
             Empty
 
-        Queue size peek input output ->
+        Queue peek sizeIn sizeOut input output ->
             List.foldr
                 (indexedMapReducer fn)
-                (List.foldl (indexedMapReducer fn) ( size - 1, [] ) input)
+                (List.foldl (indexedMapReducer fn) ( sizeIn + sizeOut, [] ) input)
                 output
                 |> Tuple.second
-                |> Queue size (fn 0 peek) []
+                |> Queue (fn 0 peek) 0 (sizeIn + sizeOut) []
 
 
 indexedMapReducer : (Int -> a -> b) -> a -> ( Int, List b ) -> ( Int, List b )
@@ -477,7 +523,7 @@ foldl fn acc queue =
         Empty ->
             acc
 
-        Queue _ peek input output ->
+        Queue peek _ _ input output ->
             List.foldr fn
                 (List.foldl fn (fn peek acc) output)
                 input
@@ -513,7 +559,7 @@ foldr fn acc queue =
         Empty ->
             acc
 
-        Queue _ peek input output ->
+        Queue peek _ _ input output ->
             List.foldr fn
                 (List.foldl fn acc input)
                 output
@@ -529,7 +575,7 @@ filter : (a -> Bool) -> Queue a -> Queue a
 filter fn queue =
     case foldr (filterReducer fn) ( 0, [] ) queue of
         ( size, peek :: output ) ->
-            Queue size peek [] output
+            Queue peek 0 (size - 1) [] output
 
         _ ->
             Empty
@@ -556,7 +602,7 @@ filterMap : (a -> Maybe b) -> Queue a -> Queue b
 filterMap fn queue =
     case foldr (filterMapReducer fn) ( 0, [] ) queue of
         ( size, peek :: output ) ->
-            Queue size peek [] output
+            Queue peek 0 (size - 1) [] output
 
         _ ->
             Empty
@@ -583,13 +629,13 @@ reverse queue =
         Empty ->
             Empty
 
-        Queue size peek input output ->
+        Queue peek sizeIn sizeOut input output ->
             case input of
                 [] ->
                     fromList (peek :: output)
 
                 nextPeek :: nextOutput ->
-                    Queue size nextPeek (peek :: output) nextOutput
+                    Queue nextPeek (sizeOut + 1) (sizeIn - 1) (peek :: output) nextOutput
 
 
 
@@ -612,9 +658,11 @@ append left right =
         ( _, Empty ) ->
             left
 
-        ( Queue lSize lPeek lInput lOutput, Queue rSize rPeek rInput rOutput ) ->
-            Queue (lSize + rSize)
+        ( Queue lPeek lSizeIn lSizeOut lInput lOutput, Queue rPeek rSizeIn rSizeOut rInput rOutput ) ->
+            Queue
                 rPeek
+                (lSizeIn + lSizeOut + 1 + rSizeIn)
+                rSizeOut
                 (lInput ++ List.foldl (::) (lPeek :: rInput) lOutput)
                 rOutput
 
@@ -655,7 +703,7 @@ intersperse delimiter queue =
         Empty ->
             Empty
 
-        Queue size peek input output ->
+        Queue peek sizeIn sizeOut input output ->
             List.foldr
                 (\el acc -> delimiter :: el :: acc)
                 (List.foldl
@@ -664,7 +712,7 @@ intersperse delimiter queue =
                     input
                 )
                 output
-                |> Queue (size * 2 - 1) peek []
+                |> Queue peek 0 ((sizeIn + sizeOut) * 2) []
 
 
 {-| Combine two queues, combining them with the given function.
@@ -679,10 +727,11 @@ If one queue is longer, the extra elements are dropped.
 map2 : (a -> b -> result) -> Queue a -> Queue b -> Queue result
 map2 fn a b =
     case ( a, b ) of
-        ( Queue aSize aPeek aInput aOutput, Queue bSize bPeek bInput bOutput ) ->
+        ( Queue aPeek aSizeIn aSizeOut aInput aOutput, Queue bPeek bSizeIn bSizeOut bInput bOutput ) ->
             Queue
-                (min aSize bSize)
                 (fn aPeek bPeek)
+                0
+                (min (aSizeIn + aSizeOut) (bSizeIn + bSizeOut))
                 []
                 (List.map2 fn
                     (aOutput ++ List.reverse aInput)
@@ -697,10 +746,11 @@ map2 fn a b =
 map3 : (a -> b -> c -> result) -> Queue a -> Queue b -> Queue c -> Queue result
 map3 fn a b c =
     case ( a, b, c ) of
-        ( Queue aS aP aI aO, Queue bS bP bI bO, Queue cS cP cI cO ) ->
+        ( Queue aP aSI aSO aI aO, Queue bP bSI bSO bI bO, Queue cP cSI cSO cI cO ) ->
             Queue
-                (min aS (min bS cS))
                 (fn aP bP cP)
+                0
+                (min (aSI + aSO) (min (bSI + bSO) (cSI + cSO)))
                 []
                 (List.map3 fn
                     (aO ++ List.reverse aI)
@@ -716,10 +766,11 @@ map3 fn a b c =
 map4 : (a -> b -> c -> d -> result) -> Queue a -> Queue b -> Queue c -> Queue d -> Queue result
 map4 fn a b c d =
     case ( ( a, b ), ( c, d ) ) of
-        ( ( Queue aS aP aI aO, Queue bS bP bI bO ), ( Queue cS cP cI cO, Queue dS dP dI dO ) ) ->
+        ( ( Queue aP aSI aSO aI aO, Queue bP bSI bSO bI bO ), ( Queue cP cSI cSO cI cO, Queue dP dSI dSO dI dO ) ) ->
             Queue
-                (min aS (min bS (min cS dS)))
                 (fn aP bP cP dP)
+                0
+                (min (aSI + aSO) (min (bSI + bSO) (min (cSI + cSO) (dSI + dSO))))
                 []
                 (List.map4 fn
                     (aO ++ List.reverse aI)
@@ -736,10 +787,11 @@ map4 fn a b c d =
 map5 : (a -> b -> c -> d -> e -> result) -> Queue a -> Queue b -> Queue c -> Queue d -> Queue e -> Queue result
 map5 fn a b c d e =
     case ( ( a, b ), ( c, d, e ) ) of
-        ( ( Queue aS aP aI aO, Queue bS bP bI bO ), ( Queue cS cP cI cO, Queue dS dP dI dO, Queue eS eP eI eO ) ) ->
+        ( ( Queue aP aSI aSO aI aO, Queue bP bSI bSO bI bO ), ( Queue cP cSI cSO cI cO, Queue dP dSI dSO dI dO, Queue eP eSI eSO eI eO ) ) ->
             Queue
-                (min aS (min bS (min cS (min dS eS))))
                 (fn aP bP cP dP eP)
+                0
+                (min (aSI + aSO) (min (bSI + bSO) (min (cSI + cSO) (min (dSI + dSO) (eSI + eSO)))))
                 []
                 (List.map5 fn
                     (aO ++ List.reverse aI)
@@ -751,12 +803,3 @@ map5 fn a b c d e =
 
         _ ->
             Empty
-
-
-
--- U T I L I T I E S
-
-
-toList : Queue a -> List a
-toList queue =
-    foldl (::) [] queue

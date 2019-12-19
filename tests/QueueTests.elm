@@ -377,6 +377,13 @@ lengthSuit =
                     |> Queue.intersperse '-'
                     |> Queue.length
                     |> Expect.equal (List.length (List.intersperse '-' list))
+
+        --
+        , fuzz2 (Fuzz.list Fuzz.int) (Fuzz.list Fuzz.char) "map2" <|
+            \a b ->
+                Queue.map2 Tuple.pair (Queue.fromList a) (Queue.fromList b)
+                    |> Queue.length
+                    |> Expect.equal (min (List.length a) (List.length b))
         ]
 
 

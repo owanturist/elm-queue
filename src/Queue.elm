@@ -4,7 +4,7 @@ module Queue exposing
     , enqueue, dequeue
     , peek, length, any, all, member, maximum, minimum, sum, product
     , map, indexedMap, foldl, foldr, filter, filterMap, reverse
-    , append, concat, concatMap, intersperse, map2
+    , append, concat, concatMap, intersperse, map2, map3, map4, map5
     , toList
     )
 
@@ -35,7 +35,7 @@ module Queue exposing
 
 # Combine
 
-@docs append, concat, concatMap, intersperse, map2
+@docs append, concat, concatMap, intersperse, map2, map3, map4, map5
 
 -}
 
@@ -665,6 +665,66 @@ map2 fn a b =
                 (List.map2 fn
                     (aOutput ++ List.reverse aInput)
                     (bOutput ++ List.reverse bInput)
+                )
+
+        _ ->
+            Empty
+
+
+{-| -}
+map3 : (a -> b -> c -> result) -> Queue a -> Queue b -> Queue c -> Queue result
+map3 fn a b c =
+    case ( a, b, c ) of
+        ( Queue aS aH aI aO, Queue bS bH bI bO, Queue cS cH cI cO ) ->
+            Queue
+                (min aS (min bS cS))
+                (fn aH bH cH)
+                []
+                (List.map3 fn
+                    (aO ++ List.reverse aI)
+                    (bO ++ List.reverse bI)
+                    (cO ++ List.reverse cI)
+                )
+
+        _ ->
+            Empty
+
+
+{-| -}
+map4 : (a -> b -> c -> d -> result) -> Queue a -> Queue b -> Queue c -> Queue d -> Queue result
+map4 fn a b c d =
+    case ( ( a, b ), ( c, d ) ) of
+        ( ( Queue aS aH aI aO, Queue bS bH bI bO ), ( Queue cS cH cI cO, Queue dS dH dI dO ) ) ->
+            Queue
+                (min aS (min bS (min cS dS)))
+                (fn aH bH cH dH)
+                []
+                (List.map4 fn
+                    (aO ++ List.reverse aI)
+                    (bO ++ List.reverse bI)
+                    (cO ++ List.reverse cI)
+                    (dO ++ List.reverse dI)
+                )
+
+        _ ->
+            Empty
+
+
+{-| -}
+map5 : (a -> b -> c -> d -> e -> result) -> Queue a -> Queue b -> Queue c -> Queue d -> Queue e -> Queue result
+map5 fn a b c d e =
+    case ( ( a, b ), ( c, d, e ) ) of
+        ( ( Queue aS aH aI aO, Queue bS bH bI bO ), ( Queue cS cH cI cO, Queue dS dH dI dO, Queue eS eH eI eO ) ) ->
+            Queue
+                (min aS (min bS (min cS (min dS eS))))
+                (fn aH bH cH dH eH)
+                []
+                (List.map5 fn
+                    (aO ++ List.reverse aI)
+                    (bO ++ List.reverse bI)
+                    (cO ++ List.reverse cI)
+                    (dO ++ List.reverse dI)
+                    (eO ++ List.reverse eI)
                 )
 
         _ ->

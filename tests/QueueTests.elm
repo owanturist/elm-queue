@@ -387,41 +387,41 @@ lengthSuit =
         ]
 
 
-peekSuit : Test
-peekSuit =
-    describe "Queue.peek"
+headSuit : Test
+headSuit =
+    describe "Queue.head"
         [ test "empty" <|
             \_ ->
                 Queue.empty
-                    |> Queue.peek
+                    |> Queue.head
                     |> Expect.equal Nothing
 
         --
         , fuzz Fuzz.string "singleton" <|
             \val ->
                 Queue.singleton val
-                    |> Queue.peek
+                    |> Queue.head
                     |> Expect.equal (Just val)
 
         --
         , fuzz2 Fuzz.int Fuzz.int "fromList" <|
             \first second ->
                 Queue.fromList [ first, second ]
-                    |> Queue.peek
+                    |> Queue.head
                     |> Expect.equal (Just second)
 
         --
         , fuzz2 (Fuzz.intRange 1 100) Fuzz.string "repeat" <|
             \n val ->
                 Queue.repeat n val
-                    |> Queue.peek
+                    |> Queue.head
                     |> Expect.equal (Just val)
 
         --
         , fuzz2 (Fuzz.intRange -10 -1) (Fuzz.intRange 0 10) "range" <|
             \lo hi ->
                 Queue.range lo hi
-                    |> Queue.peek
+                    |> Queue.head
                     |> Expect.equal (Just hi)
 
         --
@@ -429,7 +429,7 @@ peekSuit =
             \first last ->
                 Queue.fromList [ -4, -3, -2, -1, first ]
                     |> Queue.enqueue last
-                    |> Queue.peek
+                    |> Queue.head
                     |> Expect.equal (Just first)
 
         --
@@ -438,7 +438,7 @@ peekSuit =
                 Queue.fromList [ -4, -3, -2, second, -1 ]
                     |> Queue.dequeue
                     |> Tuple.second
-                    |> Queue.peek
+                    |> Queue.head
                     |> Expect.equal (Just second)
 
         --
@@ -448,7 +448,7 @@ peekSuit =
                     |> Queue.enqueue 3
                     |> Queue.enqueue 2
                     |> Queue.enqueue 1
-                    |> Queue.peek
+                    |> Queue.head
                     |> Expect.equal (Just 6)
 
         --
@@ -456,7 +456,7 @@ peekSuit =
             \val ->
                 Queue.fromList [ 1, 2, 3, 4, 5, val ]
                     |> Queue.map ((*) 2)
-                    |> Queue.peek
+                    |> Queue.head
                     |> Expect.equal (Just (val * 2))
 
         --
@@ -464,7 +464,7 @@ peekSuit =
             \val ->
                 Queue.fromList [ 1, 2, 3, 4, 5, val ]
                     |> Queue.indexedMap Tuple.pair
-                    |> Queue.peek
+                    |> Queue.head
                     |> Expect.equal (Just ( 0, val ))
 
         --
@@ -472,7 +472,7 @@ peekSuit =
             \_ ->
                 Queue.fromList [ 1, 2, 3, 4, 5, 6, 7 ]
                     |> Queue.filter ((==) 0 << modBy 2)
-                    |> Queue.peek
+                    |> Queue.head
                     |> Expect.equal (Just 6)
 
         --
@@ -487,7 +487,7 @@ peekSuit =
                             else
                                 Just el
                         )
-                    |> Queue.peek
+                    |> Queue.head
                     |> Expect.equal (Just 3)
 
         --
@@ -495,7 +495,7 @@ peekSuit =
             \val ->
                 Queue.fromList [ val, 2, 3, 4, 5, 6 ]
                     |> Queue.reverse
-                    |> Queue.peek
+                    |> Queue.head
                     |> Expect.equal (Just val)
         ]
 

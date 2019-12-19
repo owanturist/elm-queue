@@ -4,7 +4,7 @@ module Queue exposing
     , enqueue, dequeue
     , peek, length, any, all, member, maximum, minimum, sum, product
     , map, indexedMap, foldl, foldr, filter, filterMap, reverse
-    , append, concat, concatMap, intersperse
+    , append, concat, concatMap, intersperse, map2
     , toList
     )
 
@@ -35,7 +35,7 @@ module Queue exposing
 
 # Combine
 
-@docs append, concat, concatMap, intersperse
+@docs append, concat, concatMap, intersperse, map2
 
 -}
 
@@ -645,8 +645,33 @@ intersperse delimiter queue =
                 |> Queue (size * 2 - 1) head []
 
 
+{-| Combine two queues, combining them with the given function.
+If one queue is longer, the extra elements are dropped.
 
--- [7,6,5][2,3,4]1
+    map2 (+) (fromList [ 1, 2, 3 ]) (fromList [ 4, 5, 6 ]) == fromList [ 5, 7, 9 ]
+
+    map2 Tuple.pair (fromList [ "alice", "bob", "chuck" ]) (fromList [ 2, 5, 7, 8 ])
+        == fromList [ ( "alice", 5 ), ( "bob", 7 ), ( "chuck", 8 ) ]
+
+-}
+map2 : (a -> b -> result) -> Queue a -> Queue b -> Queue result
+map2 fn a b =
+    case ( a, b ) of
+        ( Queue aSize aHead aInput aOutput, Queue bSize bHead bInput bOutput ) ->
+            Queue
+                (min aSize bSize)
+                (fn aHead bHead)
+                []
+                (List.map2 fn
+                    (aOutput ++ List.reverse aInput)
+                    (bOutput ++ List.reverse bInput)
+                )
+
+        _ ->
+            Empty
+
+
+
 -- U T I L I T I E S
 
 

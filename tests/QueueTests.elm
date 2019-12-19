@@ -1252,3 +1252,213 @@ intersperseSuite =
                     |> Queue.toList
                     |> Expect.equalLists [ 1, 0, 2, 0, 3, 0, 4, 0, 5, 0, 6 ]
         ]
+
+
+map2Suite : Test
+map2Suite =
+    describe "Queue.map2"
+        [ fuzz (Fuzz.list Fuzz.int) "empty a" <|
+            \list ->
+                Queue.map2 Tuple.pair
+                    Queue.empty
+                    (Queue.fromList list)
+                    |> Queue.toList
+                    |> Expect.equalLists []
+
+        --
+        , fuzz (Fuzz.list Fuzz.int) "empty b" <|
+            \list ->
+                Queue.map2 Tuple.pair
+                    (Queue.fromList list)
+                    Queue.empty
+                    |> Queue.toList
+                    |> Expect.equalLists []
+
+        --
+        , describe "fromList"
+            [ test "equal length" <|
+                \_ ->
+                    Queue.map2 Tuple.pair
+                        (Queue.fromList [ 1, 2, 3, 4, 5, 6 ])
+                        (Queue.fromList [ 'a', 'b', 'c', 'd', 'e', 'f' ])
+                        |> Queue.toList
+                        |> Expect.equalLists
+                            [ ( 1, 'a' )
+                            , ( 2, 'b' )
+                            , ( 3, 'c' )
+                            , ( 4, 'd' )
+                            , ( 5, 'e' )
+                            , ( 6, 'f' )
+                            ]
+
+            --
+            , test "a longer" <|
+                \_ ->
+                    Queue.map2 Tuple.pair
+                        (Queue.fromList [ 1, 2, 3, 4, 5, 6 ])
+                        (Queue.fromList [ 'a', 'b', 'c' ])
+                        |> Queue.toList
+                        |> Expect.equalLists
+                            [ ( 4, 'a' )
+                            , ( 5, 'b' )
+                            , ( 6, 'c' )
+                            ]
+
+            --
+            , test "b longer" <|
+                \_ ->
+                    Queue.map2 Tuple.pair
+                        (Queue.fromList [ 1, 2, 3 ])
+                        (Queue.fromList [ 'a', 'b', 'c', 'd', 'e', 'f' ])
+                        |> Queue.toList
+                        |> Expect.equalLists
+                            [ ( 1, 'd' )
+                            , ( 2, 'e' )
+                            , ( 3, 'f' )
+                            ]
+            ]
+
+        --
+        , describe "queue"
+            [ test "equal length" <|
+                \_ ->
+                    Queue.map2 Tuple.pair
+                        (Queue.empty
+                            |> Queue.enqueue 6
+                            |> Queue.enqueue 5
+                            |> Queue.enqueue 4
+                            |> Queue.enqueue 3
+                            |> Queue.enqueue 2
+                            |> Queue.enqueue 1
+                        )
+                        (Queue.empty
+                            |> Queue.enqueue 'f'
+                            |> Queue.enqueue 'e'
+                            |> Queue.enqueue 'd'
+                            |> Queue.enqueue 'c'
+                            |> Queue.enqueue 'b'
+                            |> Queue.enqueue 'a'
+                        )
+                        |> Queue.toList
+                        |> Expect.equalLists
+                            [ ( 1, 'a' )
+                            , ( 2, 'b' )
+                            , ( 3, 'c' )
+                            , ( 4, 'd' )
+                            , ( 5, 'e' )
+                            , ( 6, 'f' )
+                            ]
+
+            --
+            , test "a longer" <|
+                \_ ->
+                    Queue.map2 Tuple.pair
+                        (Queue.empty
+                            |> Queue.enqueue 6
+                            |> Queue.enqueue 5
+                            |> Queue.enqueue 4
+                            |> Queue.enqueue 3
+                            |> Queue.enqueue 2
+                            |> Queue.enqueue 1
+                        )
+                        (Queue.empty
+                            |> Queue.enqueue 'c'
+                            |> Queue.enqueue 'b'
+                            |> Queue.enqueue 'a'
+                        )
+                        |> Queue.toList
+                        |> Expect.equalLists
+                            [ ( 4, 'a' )
+                            , ( 5, 'b' )
+                            , ( 6, 'c' )
+                            ]
+
+            --
+            , test "b longer" <|
+                \_ ->
+                    Queue.map2 Tuple.pair
+                        (Queue.empty
+                            |> Queue.enqueue 3
+                            |> Queue.enqueue 2
+                            |> Queue.enqueue 1
+                        )
+                        (Queue.empty
+                            |> Queue.enqueue 'f'
+                            |> Queue.enqueue 'e'
+                            |> Queue.enqueue 'd'
+                            |> Queue.enqueue 'c'
+                            |> Queue.enqueue 'b'
+                            |> Queue.enqueue 'a'
+                        )
+                        |> Queue.toList
+                        |> Expect.equalLists
+                            [ ( 1, 'd' )
+                            , ( 2, 'e' )
+                            , ( 3, 'f' )
+                            ]
+            ]
+
+        -- --
+        , describe "fromList + queue"
+            [ test "equal length" <|
+                \_ ->
+                    Queue.map2 Tuple.pair
+                        (Queue.fromList [ 4, 5, 6 ]
+                            |> Queue.enqueue 3
+                            |> Queue.enqueue 2
+                            |> Queue.enqueue 1
+                        )
+                        (Queue.fromList [ 'd', 'e', 'f' ]
+                            |> Queue.enqueue 'c'
+                            |> Queue.enqueue 'b'
+                            |> Queue.enqueue 'a'
+                        )
+                        |> Queue.toList
+                        |> Expect.equalLists
+                            [ ( 1, 'a' )
+                            , ( 2, 'b' )
+                            , ( 3, 'c' )
+                            , ( 4, 'd' )
+                            , ( 5, 'e' )
+                            , ( 6, 'f' )
+                            ]
+
+            --
+            , test "a longer" <|
+                \_ ->
+                    Queue.map2 Tuple.pair
+                        (Queue.fromList [ 4, 5, 6 ]
+                            |> Queue.enqueue 3
+                            |> Queue.enqueue 2
+                            |> Queue.enqueue 1
+                        )
+                        (Queue.fromList [ 'b', 'c' ]
+                            |> Queue.enqueue 'a'
+                        )
+                        |> Queue.toList
+                        |> Expect.equalLists
+                            [ ( 4, 'a' )
+                            , ( 5, 'b' )
+                            , ( 6, 'c' )
+                            ]
+
+            --
+            , test "b longer" <|
+                \_ ->
+                    Queue.map2 Tuple.pair
+                        (Queue.fromList [ 2, 3 ]
+                            |> Queue.enqueue 1
+                        )
+                        (Queue.fromList [ 'd', 'e', 'f' ]
+                            |> Queue.enqueue 'c'
+                            |> Queue.enqueue 'b'
+                            |> Queue.enqueue 'a'
+                        )
+                        |> Queue.toList
+                        |> Expect.equalLists
+                            [ ( 1, 'd' )
+                            , ( 2, 'e' )
+                            , ( 3, 'f' )
+                            ]
+            ]
+        ]

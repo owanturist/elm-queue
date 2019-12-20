@@ -11,6 +11,10 @@ module Queue exposing
 
 {-| Queue FIFO (first-in first-out) data structure.
 
+It has the same API as [`List`](https://package.elm-lang.org/packages/elm/core/latest/List)
+and it takes constant time `O(1)` for `enqueue`, `head` and `length` operations.
+It takes constant time in average case for `dequeue` `θ(1)`.
+
 @docs Queue
 
 

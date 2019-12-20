@@ -1,7 +1,7 @@
 module Queue exposing
     ( Queue
     , empty, singleton, fromList, repeat, range
-    , head, tail, take, drop, partition, toList
+    , head, tail, take, drop, partition, unzip, toList
     , enqueue, dequeue
     , length, isEmpty, any, all, member, maximum, minimum, sum, product
     , map, indexedMap, foldl, foldr, filter, filterMap, reverse
@@ -20,7 +20,7 @@ module Queue exposing
 
 # Deconstruct
 
-@docs head, tail, take, drop, partition, toList
+@docs head, tail, take, drop, partition, unzip, toList
 
 
 # Manipulation
@@ -270,6 +270,22 @@ partitionStep test element ( trues, falses ) =
 
     else
         ( trues, enqueue element falses )
+
+
+{-| Decompose a queue of tuples into a tuple of queues.
+
+    unzip (fromList [ ( 0, True ), ( 17, False ), ( 1337, True ) ])
+        == ( fromList [ 0, 17, 1337 ], fromList [ True, False, True ] )
+
+-}
+unzip : Queue ( a, b ) -> ( Queue a, Queue b )
+unzip queue =
+    foldl unzipStep ( Empty, Empty ) queue
+
+
+unzipStep : ( a, b ) -> ( Queue a, Queue b ) -> ( Queue a, Queue b )
+unzipStep ( a, b ) ( aQueue, bQueue ) =
+    ( enqueue a aQueue, enqueue b bQueue )
 
 
 {-| Convert a queue (FIFO) to list (LIFO):

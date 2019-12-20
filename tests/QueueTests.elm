@@ -296,6 +296,30 @@ partitionSuite =
         ]
 
 
+unzipSuite : Test
+unzipSuite =
+    describe "Queue.unzip"
+        [ test "docs" <|
+            \_ ->
+                Queue.fromList [ ( 0, True ), ( 17, False ), ( 1337, True ) ]
+                    |> Queue.unzip
+                    |> Expect.all
+                        [ Expect.equalLists [ 0, 17, 1337 ] << Queue.toList << Tuple.first
+                        , Expect.equalLists [ True, False, True ] << Queue.toList << Tuple.second
+                        ]
+
+        --
+        , fuzz3 (Fuzz.list (Fuzz.tuple ( Fuzz.char, Fuzz.bool ))) (Fuzz.tuple ( Fuzz.char, Fuzz.bool )) (Fuzz.tuple ( Fuzz.char, Fuzz.bool )) "fromList + queue" <|
+            \list a b ->
+                Queue.fromList list
+                    |> Queue.enqueue b
+                    |> Queue.enqueue a
+                    |> Queue.unzip
+                    |> Tuple.mapBoth Queue.toList Queue.toList
+                    |> Expect.equal (List.unzip (a :: b :: list))
+        ]
+
+
 
 -- M A N I P U L A T I O N
 

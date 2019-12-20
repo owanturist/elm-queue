@@ -85,9 +85,6 @@ singleton element =
 
 
 {-| Create a queue from `List`.
-
-Construct takes linear time proportional to `O(n)`, where `n` is length of the list.
-
 -}
 fromList : List a -> Queue a
 fromList list =
@@ -106,7 +103,8 @@ fromListReverser el ( count, acc ) =
 
 {-| Create a queue with _n_ copies of a value:
 
-    repeat 3 ( 0, 0 ) == fromList [ ( 0, 0 ), ( 0, 0 ), ( 0, 0 ) ]
+    repeat 3 "hi"
+        == fromList [ "hi", "hi", "hi" ]
 
 -}
 repeat : Int -> a -> Queue a
@@ -151,7 +149,8 @@ range lo hi =
 
     head (singleton 0) == Just 0
 
-    head (fromList 1 2 3) == Just 3
+    head (fromList [ 1, 2, 3 ])
+        == Just 3
 
 It takes constant time `O(1)`.
 
@@ -168,9 +167,10 @@ head queue =
 
 {-| Extract the rest of the list:
 
-    tail (fromList [ 1, 2, 3 ]) == Just [ 1, 2 ]
+    tail (fromList [ 1, 2, 3 ])
+        == Just [ 1, 2 ]
 
-    tail (fromList []) == Nothing
+    tail empty == Nothing
 
 -}
 tail : Queue a -> Maybe (Queue a)
@@ -185,7 +185,8 @@ tail queue =
 
 {-| Take the first `n` members of a queue:
 
-    take 2 (fromList [ 1, 2, 3 ]) == formList [ 2, 3 ]
+    take 2 (fromList [ 1, 2, 3 ])
+        == formList [ 2, 3 ]
 
 -}
 take : Int -> Queue a -> Queue a
@@ -220,7 +221,8 @@ take n queue =
 
 {-| Drop the first `n` members of a queue:
 
-    drop 2 (fromList [ 1, 2, 3 ]) == formList [ 1 ]
+    drop 2 (fromList [ 1, 2, 3 ])
+        == formList [ 1 ]
 
 -}
 drop : Int -> Queue a -> Queue a
@@ -255,9 +257,15 @@ drop n queue =
 The first queue contains all values that satisfy the test,
 and the second queue contains all the value that do not.
 
-    partition (\x -> x < 3) (fromList [ 0, 1, 2, 3, 4, 5 ]) == ( fromList [ 0, 1, 2 ], fromList [ 3, 4, 5 ] )
+    [ 0, 1, 2, 3, 4, 5 ]
+        |> fromList
+        |> partition (\x -> x < 3)
+        == ( fromList [ 0, 1, 2 ], fromList [ 3, 4, 5 ] )
 
-    partition isEven (fromList [ 0, 1, 2, 3, 4, 5 ]) == ( fromList [ 0, 2, 4 ], fromList [ 1, 3, 5 ] )
+    [ 0, 1, 2, 3, 4, 5 ]
+        |> fromList
+        |> partition isEven
+        == ( fromList [ 0, 2, 4 ], fromList [ 1, 3, 5 ] )
 
 -}
 partition : (a -> Bool) -> Queue a -> ( Queue a, Queue a )
@@ -276,8 +284,15 @@ partitionStep test element ( trues, falses ) =
 
 {-| Decompose a queue of tuples into a tuple of queues.
 
-    unzip (fromList [ ( 0, True ), ( 17, False ), ( 1337, True ) ])
-        == ( fromList [ 0, 17, 1337 ], fromList [ True, False, True ] )
+    [ ( 0, True )
+    , ( 17, False )
+    , ( 1337, True )
+    ]
+        |> fromList
+        |> unzip
+        == ( fromList [ 0, 17, 1337 ]
+           , fromList [ True, False, True ]
+           )
 
 -}
 unzip : Queue ( a, b ) -> ( Queue a, Queue b )
@@ -315,9 +330,14 @@ toList queue =
 
     enqueue 1 empty == fromList [ 1 ]
 
-    enqueue 1 (fromList [ 2, 3, 4 ]) == fromList [ 1, 2, 3, 4 ]
+    enqueue 1 (fromList [ 2, 3, 4 ])
+        == fromList [ 1, 2, 3, 4 ]
 
-    empty |> enqueue 1 |> enqueue 2 |> enqueue 3 == fromList [ 3, 2, 1 ]
+    empty
+        |> enqueue 1
+        |> enqueue 2
+        |> enqueue 3
+        == fromList [ 3, 2, 1 ]
 
 It takes constant time `O(1)`.
 
@@ -336,11 +356,12 @@ enqueue element queue =
 
     dequeue empty == ( Nothing, empty )
 
-    dequeue (fromList [ 1 ]) == ( Just 1, empty )
+    dequeue (singleton 1) == ( Just 1, empty )
 
-    dequeue (fromList [ 1, 2, 3 ]) == ( Just 3, fromList [ 1, 2 ] )
+    dequeue (fromList [ 1, 2, 3 ])
+        == ( Just 3, fromList [ 1, 2 ] )
 
-It takes constant time in average case `θ(1)` (`Ω(1)` and `O(n)` where `n` is size of the queue).
+It takes constant time in average case `θ(1)` (`Ω(1)` and `O(n)`).
 
 -}
 dequeue : Queue a -> ( Maybe a, Queue a )
@@ -374,6 +395,8 @@ dequeue queue =
     length empty == 0
 
     length (fromList [ 3, 2, 1 ]) == 3
+
+It takes constant time `O(1)`.
 
 -}
 length : Queue a -> Int
@@ -533,9 +556,8 @@ product queue =
 
 {-| Apply a function to every element of a queue:
 
-    map sqrt (fromList [ 1, 4, 9 ]) == fromList [ 1, 2, 3 ]
-
-It takes linear time proportional to `O(n)` where `n` is size of the queue.
+    map sqrt (fromList [ 1, 4, 9 ])
+        == fromList [ 1, 2, 3 ]
 
 -}
 map : (a -> b) -> Queue a -> Queue b
@@ -556,8 +578,6 @@ map fn queue =
 
     indexedMap Tuple.pair (fromList [ "A", "B", "C" ])
         == fromList [ ( 2, "A" ), ( 1, "B" ), ( 0, "C" ) ]
-
-It takes linear time proportional to `O(n)` where `n` is size of the queue.
 
 -}
 indexedMap : (Int -> a -> b) -> Queue a -> Queue b
@@ -657,7 +677,8 @@ foldr fn acc queue =
 
 {-| Keep elements that satisfy the test:
 
-    filter isEven (fromList [ 1, 2, 3, 4, 5, 6 ]) == fromList [ 2, 4, 6 ]
+    filter isEven (fromList [ 1, 2, 3, 4, 5, 6 ])
+        == fromList [ 2, 4, 6 ]
 
 -}
 filter : (a -> Bool) -> Queue a -> Queue a
@@ -683,7 +704,9 @@ filterStep fn element (( size, list ) as acc) =
 For example, maybe you have a bunch of strings from an untrusted source
 and you want to turn them into numbers:
 
-    filterMap String.toInt (fromList [ "3", "hi", "12", "4th", "May" ])
+    [ "3", "hi", "12", "4th", "May" ]
+        |> fromList
+        |> filterMap String.toInt
         == fromList [ 3, 12 ]
 
 -}
@@ -709,7 +732,8 @@ filterMapStep fn element (( size, list ) as acc) =
 
 {-| Reverse the queue:
 
-    reverse (fromList [ 1, 2, 3, 4 ]) == fromList [ 4, 3, 2, 1 ]
+    reverse (fromList [ 1, 2, 3, 4 ])
+        == fromList [ 4, 3, 2, 1 ]
 
 -}
 reverse : Queue a -> Queue a
@@ -733,9 +757,11 @@ reverse queue =
 
 {-| Put two queues together:
 
-    append (fromList [ 1, 1, 2 ]) (fromList [ 3, 5, 8 ]) == fromList [ 1, 1, 2, 3, 5, 8 ]
+    append (fromList [ 1, 1, 2 ]) (fromList [ 3, 5, 8 ])
+        == fromList [ 1, 1, 2, 3, 5, 8 ]
 
-    append (fromList [ 'a', 'b' ]) (fromList [ 'c' ]) == fromList [ 'a', 'b', 'c' ]
+    append (fromList [ 'a', 'b' ]) (fromList [ 'c' ])
+        == fromList [ 'a', 'b', 'c' ]
 
 -}
 append : Queue a -> Queue a -> Queue a
@@ -758,13 +784,12 @@ append left right =
 
 {-| Concatenate a bunch of queues into a single queue:
 
-    concat
-        (fromList
-            [ fromList [ 1, 2 ]
-            , fromList [ 3 ]
-            , fromList [ 4, 5 ]
-            ]
-        )
+    [ fromList [ 1, 2 ]
+    , fromList [ 3 ]
+    , fromList [ 4, 5 ]
+    ]
+        |> fromList
+        |> concat
         == fromList [ 1, 2, 3, 4, 5 ]
 
 -}
@@ -774,6 +799,9 @@ concat queueOfQueues =
 
 
 {-| Map a given function onto a queue and flatten the resulting queues:
+
+    concatMap f xs == concat (map f xs)
+
 -}
 concatMap : (a -> Queue b) -> Queue a -> Queue b
 concatMap fn queue =
@@ -782,8 +810,8 @@ concatMap fn queue =
 
 {-| Places the given value between all members of the given queue.
 
-    intersperse "on" (fromList [ "turtles", "turtles", "turtles" ])
-        == fromList [ "turtles", "on", "turtles", "on", "turtles" ]
+    intersperse ">" (fromList [ "third", "second", "first" ])
+        == fromList [ "third", ">", "second", ">", "first" ]
 
 -}
 intersperse : a -> Queue a -> Queue a
@@ -807,10 +835,19 @@ intersperse delimiter queue =
 {-| Combine two queues, combining them with the given function.
 If one queue is longer, the extra elements are dropped.
 
-    map2 (+) (fromList [ 1, 2, 3 ]) (fromList [ 4, 5, 6 ]) == fromList [ 5, 7, 9 ]
+    map2 (+)
+        (fromList [ 1, 2, 3 ])
+        (fromList [ 4, 5, 6 ])
+        == fromList [ 5, 7, 9 ]
 
-    map2 Tuple.pair (fromList [ "alice", "bob", "chuck" ]) (fromList [ 2, 5, 7, 8 ])
-        == fromList [ ( "alice", 5 ), ( "bob", 7 ), ( "chuck", 8 ) ]
+    map2 Tuple.pair
+        (fromList [ "alice", "bob", "chuck" ])
+        (fromList [ 2, 5, 7, 8 ])
+        == fromList
+            [ ( "alice", 5 )
+            , ( "bob", 7 )
+            , ( "chuck", 8 )
+            ]
 
 -}
 map2 : (a -> b -> result) -> Queue a -> Queue b -> Queue result
@@ -919,11 +956,20 @@ sort queue =
     chuck =
         { name = "Chuck", height = 1.76 }
 
-    sortBy .name (fromList [ chuck, alice, bob ]) == fromList [ chuck, bob, alice ]
+    [ chuck, alice, bob ]
+        |> fromList
+        |> sortBy .name
+        == fromList [ chuck, bob, alice ]
 
-    sortBy .height (fromList [ chuck, alice, bob ]) == fromList [ bob, chuck, alice ]
+    [ chuck, alice, bob ]
+        |> fromList
+        |> sortBy .height
+        == fromList [ bob, chuck, alice ]
 
-    sortBy String.length (fromList [ "cat", "mouse" ]) == fromList [ "mouse", "cat" ]
+    [ "cat", "mouse" ]
+        |> fromList
+        |> sortBy String.length
+        == fromList [ "mouse", "cat" ]
 
 -}
 sortBy : (a -> comparable) -> Queue a -> Queue a
@@ -960,7 +1006,10 @@ sortByComparator toKey left right =
             EQ -> EQ
             GT -> LT
 
-    sortWith flippedComparison (fromList [ 5, 4, 3, 2, 1 ]) == fromList [ 1, 2, 3, 4, 5 ]
+    [ 5, 4, 3, 2, 1 ]
+        |> fromList
+        |> sortWith flippedComparison
+        == fromList [ 1, 2, 3, 4, 5 ]
 
 -}
 sortWith : (a -> a -> Order) -> Queue a -> Queue a

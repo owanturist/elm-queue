@@ -271,6 +271,31 @@ dropSuite =
         ]
 
 
+partitionSuite : Test
+partitionSuite =
+    describe "Queue.partition"
+        [ test "docs" <|
+            \_ ->
+                Queue.fromList [ 0, 1, 2, 3, 4, 5 ]
+                    |> Queue.partition (\x -> x < 3)
+                    |> Expect.all
+                        [ Expect.equalLists [ 0, 1, 2 ] << Queue.toList << Tuple.first
+                        , Expect.equalLists [ 3, 4, 5 ] << Queue.toList << Tuple.second
+                        ]
+
+        --
+        , fuzz3 (Fuzz.list Fuzz.char) (Fuzz.tuple3 ( Fuzz.char, Fuzz.char, Fuzz.char )) Fuzz.char "fromList + queue" <|
+            \list ( a, b, c ) x ->
+                Queue.fromList list
+                    |> Queue.enqueue c
+                    |> Queue.enqueue b
+                    |> Queue.enqueue a
+                    |> Queue.partition (\y -> y > x)
+                    |> Tuple.mapBoth Queue.toList Queue.toList
+                    |> Expect.equal (List.partition (\y -> y > x) (a :: b :: c :: list))
+        ]
+
+
 
 -- M A N I P U L A T I O N
 

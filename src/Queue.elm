@@ -1,7 +1,7 @@
 module Queue exposing
     ( Queue
     , empty, singleton, fromList, repeat, range
-    , head, tail, take, drop, toList
+    , head, tail, take, drop, partition, toList
     , enqueue, dequeue
     , length, isEmpty, any, all, member, maximum, minimum, sum, product
     , map, indexedMap, foldl, foldr, filter, filterMap, reverse
@@ -20,7 +20,7 @@ module Queue exposing
 
 # Deconstruct
 
-@docs head, tail, take, drop, toList
+@docs head, tail, take, drop, partition, toList
 
 
 # Manipulation
@@ -249,8 +249,27 @@ drop n queue =
                 Empty
 
 
+{-| Partition a queue based on some test.
+The first queue contains all values that satisfy the test,
+and the second queue contains all the value that do not.
 
--- [7,6,5][2,3,4]1
+    partition (\x -> x < 3) (fromList [ 0, 1, 2, 3, 4, 5 ]) == ( fromList [ 0, 1, 2 ], fromList [ 3, 4, 5 ] )
+
+    partition isEven (fromList [ 0, 1, 2, 3, 4, 5 ]) == ( fromList [ 0, 2, 4 ], fromList [ 1, 3, 5 ] )
+
+-}
+partition : (a -> Bool) -> Queue a -> ( Queue a, Queue a )
+partition test queue =
+    foldl (partitionStep test) ( Empty, Empty ) queue
+
+
+partitionStep : (a -> Bool) -> a -> ( Queue a, Queue a ) -> ( Queue a, Queue a )
+partitionStep test element ( trues, falses ) =
+    if test element then
+        ( enqueue element trues, falses )
+
+    else
+        ( trues, enqueue element falses )
 
 
 {-| Convert a queue (FIFO) to list (LIFO):
@@ -531,15 +550,15 @@ indexedMap fn queue =
 
         Queue peek sizeIn sizeOut input output ->
             List.foldr
-                (indexedMapReducer fn)
-                (List.foldl (indexedMapReducer fn) ( sizeIn + sizeOut, [] ) input)
+                (indexedMapStep fn)
+                (List.foldl (indexedMapStep fn) ( sizeIn + sizeOut, [] ) input)
                 output
                 |> Tuple.second
                 |> Queue (fn 0 peek) 0 (sizeIn + sizeOut) []
 
 
-indexedMapReducer : (Int -> a -> b) -> a -> ( Int, List b ) -> ( Int, List b )
-indexedMapReducer fn element ( index, list ) =
+indexedMapStep : (Int -> a -> b) -> a -> ( Int, List b ) -> ( Int, List b )
+indexedMapStep fn element ( index, list ) =
     ( index - 1
     , fn index element :: list
     )
@@ -625,7 +644,7 @@ foldr fn acc queue =
 -}
 filter : (a -> Bool) -> Queue a -> Queue a
 filter fn queue =
-    case foldr (filterReducer fn) ( 0, [] ) queue of
+    case foldr (filterStep fn) ( 0, [] ) queue of
         ( size, peek :: output ) ->
             Queue peek 0 (size - 1) [] output
 
@@ -633,8 +652,8 @@ filter fn queue =
             Empty
 
 
-filterReducer : (a -> Bool) -> a -> ( Int, List a ) -> ( Int, List a )
-filterReducer fn element (( size, list ) as acc) =
+filterStep : (a -> Bool) -> a -> ( Int, List a ) -> ( Int, List a )
+filterStep fn element (( size, list ) as acc) =
     if fn element then
         ( size + 1, element :: list )
 
@@ -652,7 +671,7 @@ and you want to turn them into numbers:
 -}
 filterMap : (a -> Maybe b) -> Queue a -> Queue b
 filterMap fn queue =
-    case foldr (filterMapReducer fn) ( 0, [] ) queue of
+    case foldr (filterMapStep fn) ( 0, [] ) queue of
         ( size, peek :: output ) ->
             Queue peek 0 (size - 1) [] output
 
@@ -660,8 +679,8 @@ filterMap fn queue =
             Empty
 
 
-filterMapReducer : (a -> Maybe b) -> a -> ( Int, List b ) -> ( Int, List b )
-filterMapReducer fn element (( size, list ) as acc) =
+filterMapStep : (a -> Maybe b) -> a -> ( Int, List b ) -> ( Int, List b )
+filterMapStep fn element (( size, list ) as acc) =
     case fn element of
         Nothing ->
             acc

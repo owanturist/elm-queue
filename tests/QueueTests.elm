@@ -1647,3 +1647,138 @@ map2Suite =
                             ]
             ]
         ]
+
+
+sortSuite : Test
+sortSuite =
+    describe "Queue.sort"
+        [ test "docs" <|
+            \_ ->
+                Queue.fromList [ 3, 1, 5 ]
+                    |> Queue.sort
+                    |> Queue.toList
+                    |> Expect.equalLists [ 5, 3, 1 ]
+
+        --
+        , fuzz2
+            (Fuzz.list Fuzz.char)
+            (Fuzz.tuple3 ( Fuzz.char, Fuzz.char, Fuzz.char ))
+            "fromList + queue"
+          <|
+            \list ( a, b, c ) ->
+                Queue.fromList list
+                    |> Queue.enqueue c
+                    |> Queue.enqueue b
+                    |> Queue.enqueue a
+                    |> Queue.sort
+                    |> Queue.toList
+                    |> Expect.equalLists
+                        ((a :: b :: c :: list)
+                            |> List.sort
+                            |> List.reverse
+                        )
+        ]
+
+
+sortBySuite : Test
+sortBySuite =
+    describe "Queue.sortBy"
+        [ let
+            alice =
+                { name = "Alice", height = 1.62 }
+
+            bob =
+                { name = "Bob", height = 1.85 }
+
+            chuck =
+                { name = "Chuck", height = 1.76 }
+          in
+          describe "docs"
+            [ test ".name" <|
+                \_ ->
+                    Queue.fromList [ chuck, alice, bob ]
+                        |> Queue.sortBy .name
+                        |> Queue.toList
+                        |> Expect.equalLists [ chuck, bob, alice ]
+
+            --
+            , test ".height" <|
+                \_ ->
+                    Queue.fromList [ chuck, alice, bob ]
+                        |> Queue.sortBy .height
+                        |> Queue.toList
+                        |> Expect.equalLists [ bob, chuck, alice ]
+
+            --
+            , test "String.length" <|
+                \_ ->
+                    Queue.fromList [ "cat", "mouse" ]
+                        |> Queue.sortBy String.length
+                        |> Queue.toList
+                        |> Expect.equalLists [ "mouse", "cat" ]
+            ]
+
+        --
+        , fuzz3
+            (Fuzz.list (Fuzz.tuple ( Fuzz.char, Fuzz.int )))
+            (Fuzz.tuple ( Fuzz.char, Fuzz.int ))
+            (Fuzz.tuple ( Fuzz.char, Fuzz.int ))
+            "fromList + queue"
+          <|
+            \list a b ->
+                Queue.fromList list
+                    |> Queue.enqueue b
+                    |> Queue.enqueue a
+                    |> Queue.sortBy Tuple.second
+                    |> Queue.toList
+                    |> List.map Tuple.second
+                    |> Expect.equalLists
+                        ((a :: b :: list)
+                            |> List.sortBy Tuple.second
+                            |> List.map Tuple.second
+                            |> List.reverse
+                        )
+        ]
+
+
+sortWithSuite : Test
+sortWithSuite =
+    let
+        flippedComparison a b =
+            case compare a b of
+                LT ->
+                    GT
+
+                EQ ->
+                    EQ
+
+                GT ->
+                    LT
+    in
+    describe "Queue.sortWith"
+        [ test "docs" <|
+            \_ ->
+                Queue.fromList [ 5, 4, 3, 2, 1 ]
+                    |> Queue.sortWith flippedComparison
+                    |> Queue.toList
+                    |> Expect.equalLists [ 1, 2, 3, 4, 5 ]
+
+        --
+        , fuzz2
+            (Fuzz.list Fuzz.int)
+            (Fuzz.tuple3 ( Fuzz.int, Fuzz.int, Fuzz.int ))
+            "fromList + queue"
+          <|
+            \list ( a, b, c ) ->
+                Queue.fromList list
+                    |> Queue.enqueue c
+                    |> Queue.enqueue b
+                    |> Queue.enqueue a
+                    |> Queue.sortWith flippedComparison
+                    |> Queue.toList
+                    |> Expect.equalLists
+                        ((a :: b :: c :: list)
+                            |> List.sortWith flippedComparison
+                            |> List.reverse
+                        )
+        ]

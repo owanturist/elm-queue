@@ -6,6 +6,7 @@ module Queue exposing
     , length, isEmpty, any, all, member, maximum, minimum, sum, product
     , map, indexedMap, foldl, foldr, filter, filterMap, reverse
     , append, concat, concatMap, intersperse, map2, map3, map4, map5
+    , sort, sortBy, sortWith
     )
 
 {-| Queue FIFO (first-in first-out) data structure.
@@ -41,6 +42,11 @@ module Queue exposing
 # Combine
 
 @docs append, concat, concatMap, intersperse, map2, map3, map4, map5
+
+
+# Sort
+
+@docs sort, sortBy, sortWith
 
 -}
 
@@ -879,3 +885,98 @@ map5 fn a b c d e =
 
         _ ->
             Empty
+
+
+
+-- S O R T
+
+
+{-| Sort values from lowest to highest:
+
+    sort (fromList [ 3, 1, 5 ]) == fromList [ 5, 3, 1 ]
+
+-}
+sort : Queue comparable -> Queue comparable
+sort queue =
+    sortBy identity queue
+
+
+{-| Sort values by a derived property:
+
+    alice =
+        { name = "Alice", height = 1.62 }
+
+    bob =
+        { name = "Bob", height = 1.85 }
+
+    chuck =
+        { name = "Chuck", height = 1.76 }
+
+    sortBy .name (fromList [ chuck, alice, bob ]) == fromList [ chuck, bob, alice ]
+
+    sortBy .height (fromList [ chuck, alice, bob ]) == fromList [ bob, chuck, alice ]
+
+    sortBy String.length (fromList [ "cat", "mouse" ]) == fromList [ "mouse", "cat" ]
+
+-}
+sortBy : (a -> comparable) -> Queue a -> Queue a
+sortBy toKey queue =
+    case queue of
+        Empty ->
+            Empty
+
+        Queue peek _ _ input output ->
+            -- don't care about order here
+            List.foldl (::) (peek :: output) input
+                |> List.sortWith (sortByComparator toKey)
+                |> fromList
+
+
+sortByComparator : (a -> comparable) -> a -> a -> Order
+sortByComparator toKey left right =
+    case compare (toKey left) (toKey right) of
+        LT ->
+            GT
+
+        EQ ->
+            EQ
+
+        GT ->
+            LT
+
+
+{-| Sort values with a custom comparison function:
+
+    flippedComparison a b =
+        case compare a b of
+            LT -> GT
+            EQ -> EQ
+            GT -> LT
+
+    sortWith flippedComparison (fromList [ 5, 4, 3, 2, 1 ]) == fromList [ 1, 2, 3, 4, 5 ]
+
+-}
+sortWith : (a -> a -> Order) -> Queue a -> Queue a
+sortWith cmp queue =
+    case queue of
+        Empty ->
+            Empty
+
+        Queue peek _ _ input output ->
+            -- don't care about order here
+            List.foldl (::) (peek :: output) input
+                |> List.sortWith (sortWithComparator cmp)
+                |> fromList
+
+
+sortWithComparator : (a -> a -> Order) -> a -> a -> Order
+sortWithComparator cmp left right =
+    case cmp left right of
+        LT ->
+            GT
+
+        EQ ->
+            EQ
+
+        GT ->
+            LT

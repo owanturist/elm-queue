@@ -3,7 +3,7 @@ module Queue exposing
     , empty, singleton, fromList, repeat, range
     , head, tail, take, drop, partition, unzip, toList
     , enqueue, dequeue
-    , length, isEmpty, any, all, member, maximum, minimum, sum, product
+    , length, isEmpty, isEqual, any, all, member, maximum, minimum, sum, product
     , map, indexedMap, foldl, foldr, filter, filterMap, reverse
     , append, concat, concatMap, intersperse, map2, map3, map4, map5
     , sort, sortBy, sortWith
@@ -31,7 +31,7 @@ module Queue exposing
 
 # Query
 
-@docs length, isEmpty, any, all, member, maximum, minimum, sum, product
+@docs length, isEmpty, isEqual, any, all, member, maximum, minimum, sum, product
 
 
 # Transform
@@ -419,6 +419,29 @@ length queue =
 isEmpty : Queue a -> Bool
 isEmpty =
     (==) Empty
+
+
+{-| Determine if two queues are equal.
+It takes constant time `O(1)` when lengths are different.
+-}
+isEqual : Queue a -> Queue a -> Bool
+isEqual left right =
+    case ( left, right ) of
+        ( Empty, Empty ) ->
+            True
+
+        ( Queue lPeek lSizeIn lSizeOut lInput lOutput, Queue rPeek rSizeIn rSizeOut rInput rOutput ) ->
+            if lSizeIn + lSizeOut /= rSizeIn + rSizeOut || lPeek /= rPeek then
+                False
+
+            else if lSizeIn == rSizeIn then
+                lInput == rInput && lOutput == rOutput
+
+            else
+                lInput ++ List.reverse lOutput == rInput ++ List.reverse rOutput
+
+        _ ->
+            False
 
 
 {-| Determine if any elements satisfy some test:

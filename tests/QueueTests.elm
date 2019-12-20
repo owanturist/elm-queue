@@ -678,6 +678,58 @@ isEmptySuite =
                 |> Expect.equal (List.isEmpty list)
 
 
+isEqualSuite : Test
+isEqualSuite =
+    describe "Queue.isEqual"
+        [ test "empty vs empty" <|
+            \_ ->
+                Queue.isEqual Queue.empty Queue.empty
+                    |> Expect.equal True
+
+        --
+        , test "different lengths" <|
+            \_ ->
+                Queue.isEqual
+                    (Queue.fromList [ 1, 2, 3 ])
+                    (Queue.fromList [ 1, 2 ])
+                    |> Expect.equal False
+
+        --
+        , describe "same lengths"
+            [ test "non equal" <|
+                \_ ->
+                    Queue.isEqual
+                        (Queue.range 1 10)
+                        (Queue.range 2 11)
+                        |> Expect.equal False
+
+            --
+            , test "equal" <|
+                \_ ->
+                    Queue.isEqual
+                        (Queue.range 1 10)
+                        (Queue.range 1 10)
+                        |> Expect.equal True
+            ]
+
+        --
+        , fuzz2 (Fuzz.list Fuzz.char) (Fuzz.list Fuzz.char) "fromList" <|
+            \a b ->
+                Queue.isEqual
+                    (Queue.fromList a)
+                    (Queue.fromList b)
+                    |> Expect.equal (a == b)
+
+        --
+        , test "fromList + queue" <|
+            \_ ->
+                Queue.isEqual
+                    (Queue.enqueue 11 (Queue.range 1 10))
+                    (Queue.enqueue 11 (Queue.enqueue 10 (Queue.range 1 9)))
+                    |> Expect.equal True
+        ]
+
+
 anySuit : Test
 anySuit =
     describe "Queue.any"

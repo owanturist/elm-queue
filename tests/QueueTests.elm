@@ -62,25 +62,32 @@ repeatSuite =
 rangeSuite : Test
 rangeSuite =
     describe "Queue.range"
-        [ fuzz2 (Fuzz.intRange 1 10) (Fuzz.intRange -10 0) "lo > hi" <|
+        [ test "docs" <|
+            \_ ->
+                Queue.range 3 6
+                    |> Queue.toList
+                    |> Expect.equalLists [ 6, 5, 4, 3 ]
+
+        --
+        , fuzz2 (Fuzz.intRange 1 10) (Fuzz.intRange -10 0) "lo > hi" <|
             \lo hi ->
                 Queue.range lo hi
                     |> Queue.toList
-                    |> Expect.equalLists (List.range lo hi)
+                    |> Expect.equalLists (List.reverse (List.range lo hi))
 
         --
         , fuzz Fuzz.int "lo == hi" <|
             \lo ->
                 Queue.range lo lo
                     |> Queue.toList
-                    |> Expect.equalLists (List.range lo lo)
+                    |> Expect.equalLists [ lo ]
 
         --
         , fuzz2 (Fuzz.intRange -10 -1) (Fuzz.intRange 0 10) "lo < hi" <|
             \lo hi ->
                 Queue.range lo hi
                     |> Queue.toList
-                    |> Expect.equalLists (List.range lo hi)
+                    |> Expect.equalLists (List.reverse (List.range lo hi))
         ]
 
 
@@ -123,7 +130,7 @@ headSuit =
             \lo hi ->
                 Queue.range lo hi
                     |> Queue.head
-                    |> Expect.equal (Just hi)
+                    |> Expect.equal (Just lo)
 
         --
         , fuzz2 (Fuzz.intRange 0 4) (Fuzz.intRange 5 10) "enqueue" <|
@@ -364,7 +371,7 @@ enqueueSuite =
                 Queue.range 1 5
                     |> Queue.enqueue last
                     |> Queue.toList
-                    |> Expect.equalLists [ last, 1, 2, 3, 4, 5 ]
+                    |> Expect.equalLists [ last, 5, 4, 3, 2, 1 ]
 
         --
         , test "enqueue" <|
@@ -438,8 +445,8 @@ dequeueSuit =
                 Queue.range 1 5
                     |> Queue.dequeue
                     |> Expect.all
-                        [ Expect.equal (Just 5) << Tuple.first
-                        , Expect.equalLists [ 1, 2, 3, 4 ] << Queue.toList << Tuple.second
+                        [ Expect.equal (Just 1) << Tuple.first
+                        , Expect.equalLists [ 5, 4, 3, 2 ] << Queue.toList << Tuple.second
                         ]
 
         --
@@ -510,11 +517,11 @@ lengthSuit =
                     |> Expect.equal n
 
         --
-        , fuzz2 (Fuzz.intRange -10 -1) (Fuzz.intRange 0 10) "range" <|
+        , fuzz2 (Fuzz.intRange -100 100) (Fuzz.intRange -100 100) "range" <|
             \lo hi ->
                 Queue.range lo hi
                     |> Queue.length
-                    |> Expect.equal (hi - lo + 1)
+                    |> Expect.equal (List.length (List.range lo hi))
 
         --
         , fuzz (Fuzz.list (Fuzz.intRange 0 100)) "enqueue" <|
@@ -992,7 +999,7 @@ indexedMapSuit =
                 Queue.range 1 5
                     |> Queue.indexedMap (\ind int -> String.fromInt ind ++ String.fromInt int)
                     |> Queue.toList
-                    |> Expect.equalLists [ "41", "32", "23", "14", "05" ]
+                    |> Expect.equalLists [ "45", "34", "23", "12", "01" ]
 
         --
         , test "fromList" <|
@@ -1257,7 +1264,7 @@ reverseSuite =
                 Queue.range 0 5
                     |> Queue.reverse
                     |> Queue.toList
-                    |> Expect.equalLists [ 5, 4, 3, 2, 1, 0 ]
+                    |> Expect.equalLists [ 0, 1, 2, 3, 4, 5 ]
 
         --
         , fuzz2 (Fuzz.intRange 0 4) (Fuzz.intRange 5 10) "enqueue" <|

@@ -117,13 +117,13 @@ repeat n value =
 {-| Create a queue of numbers, every element increasing one.
 You give the lowest and the highest number that should be in the queue.
 
-    range 3 6 == fromList [ 3, 4, 5, 6 ]
+    range 3 6 == fromList [ 6, 5, 4, 3 ]
 
     range 3 3 == fromList [ 3 ]
 
     range 6 3 == fromList []
 
-    head (range 3 6) == Just 6
+    head (range 3 6) == Just 3
 
 -}
 range : Int -> Int -> Queue Int
@@ -132,18 +132,7 @@ range lo hi =
         Empty
 
     else
-        []
-            |> rangeHelp lo hi
-            |> Queue hi 0 (hi - lo) []
-
-
-rangeHelp : Int -> Int -> List Int -> List Int
-rangeHelp lo hi acc =
-    if lo < hi then
-        rangeHelp (lo + 1) hi (lo :: acc)
-
-    else
-        acc
+        Queue lo 0 (hi - lo) [] (List.range (lo + 1) hi)
 
 
 

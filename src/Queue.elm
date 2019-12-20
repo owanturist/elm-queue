@@ -166,6 +166,13 @@ head queue =
             Just peek
 
 
+{-| Extract the rest of the list:
+
+    tail (fromList [ 1, 2, 3 ]) == Just [ 1, 2 ]
+
+    tail (fromList []) == Nothing
+
+-}
 tail : Queue a -> Maybe (Queue a)
 tail queue =
     case dequeue queue of

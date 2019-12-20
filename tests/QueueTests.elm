@@ -217,20 +217,58 @@ tailSuite =
 
 takeSuite : Test
 takeSuite =
-    fuzz3 (Fuzz.list Fuzz.char) (Fuzz.tuple3 ( Fuzz.char, Fuzz.char, Fuzz.char )) Fuzz.int "Queue.take" <|
-        \list ( a, b, c ) n ->
-            Queue.fromList list
-                |> Queue.enqueue c
-                |> Queue.enqueue b
-                |> Queue.enqueue a
-                |> Queue.take n
-                |> Queue.toList
-                |> Expect.equalLists
-                    ((a :: b :: c :: list)
-                        |> List.reverse
-                        |> List.take n
-                        |> List.reverse
-                    )
+    describe "Queue.take"
+        [ test "docs" <|
+            \_ ->
+                Queue.fromList [ 1, 2, 3 ]
+                    |> Queue.take 2
+                    |> Queue.toList
+                    |> Expect.equalLists [ 2, 3 ]
+
+        --
+        , fuzz3 (Fuzz.list Fuzz.char) (Fuzz.tuple3 ( Fuzz.char, Fuzz.char, Fuzz.char )) Fuzz.int "fromList + queue" <|
+            \list ( a, b, c ) n ->
+                Queue.fromList list
+                    |> Queue.enqueue c
+                    |> Queue.enqueue b
+                    |> Queue.enqueue a
+                    |> Queue.take n
+                    |> Queue.toList
+                    |> Expect.equalLists
+                        ((a :: b :: c :: list)
+                            |> List.reverse
+                            |> List.take n
+                            |> List.reverse
+                        )
+        ]
+
+
+dropSuite : Test
+dropSuite =
+    describe "Queue.drop"
+        [ test "docs" <|
+            \_ ->
+                Queue.fromList [ 1, 2, 3 ]
+                    |> Queue.drop 2
+                    |> Queue.toList
+                    |> Expect.equalLists [ 1 ]
+
+        --
+        , fuzz3 (Fuzz.list Fuzz.char) (Fuzz.tuple3 ( Fuzz.char, Fuzz.char, Fuzz.char )) Fuzz.int "fromList + queue" <|
+            \list ( a, b, c ) n ->
+                Queue.fromList list
+                    |> Queue.enqueue c
+                    |> Queue.enqueue b
+                    |> Queue.enqueue a
+                    |> Queue.drop n
+                    |> Queue.toList
+                    |> Expect.equalLists
+                        ((a :: b :: c :: list)
+                            |> List.reverse
+                            |> List.drop n
+                            |> List.reverse
+                        )
+        ]
 
 
 
@@ -463,6 +501,36 @@ lengthSuit =
                     |> Queue.tail
                     |> Maybe.map Queue.length
                     |> Expect.equal (Maybe.map List.length (List.tail list))
+
+        --
+        , fuzz3 (Fuzz.list Fuzz.char) (Fuzz.tuple3 ( Fuzz.char, Fuzz.char, Fuzz.char )) Fuzz.int "take" <|
+            \list ( a, b, c ) n ->
+                Queue.fromList list
+                    |> Queue.enqueue c
+                    |> Queue.enqueue b
+                    |> Queue.enqueue a
+                    |> Queue.take n
+                    |> Queue.length
+                    |> Expect.equal
+                        ((a :: b :: c :: list)
+                            |> List.take n
+                            |> List.length
+                        )
+
+        --
+        , fuzz3 (Fuzz.list Fuzz.char) (Fuzz.tuple3 ( Fuzz.char, Fuzz.char, Fuzz.char )) Fuzz.int "drop" <|
+            \list ( a, b, c ) n ->
+                Queue.fromList list
+                    |> Queue.enqueue c
+                    |> Queue.enqueue b
+                    |> Queue.enqueue a
+                    |> Queue.drop n
+                    |> Queue.length
+                    |> Expect.equal
+                        ((a :: b :: c :: list)
+                            |> List.drop n
+                            |> List.length
+                        )
 
         --
         , fuzz (Fuzz.list (Fuzz.intRange 0 100)) "map" <|

@@ -1,7 +1,7 @@
 module Queue exposing
     ( Queue
     , empty, singleton, fromList, repeat, range
-    , head, tail, take, toList
+    , head, tail, take, drop, toList
     , enqueue, dequeue
     , length, isEmpty, any, all, member, maximum, minimum, sum, product
     , map, indexedMap, foldl, foldr, filter, filterMap, reverse
@@ -20,7 +20,7 @@ module Queue exposing
 
 # Deconstruct
 
-@docs head, tail, take, toList
+@docs head, tail, take, drop, toList
 
 
 # Manipulation
@@ -181,6 +181,11 @@ tail queue =
             Just tailQueue
 
 
+{-| Take the first `n` members of a queue:
+
+    take 2 (fromList [ 1, 2, 3 ]) == formList [ 2, 3 ]
+
+-}
 take : Int -> Queue a -> Queue a
 take n queue =
     case queue of
@@ -194,13 +199,13 @@ take n queue =
             else if n == 1 then
                 Queue peek 0 0 [] []
 
-            else if n - 1 < sizeOut then
+            else if n < 1 + sizeOut then
                 Queue peek 0 (n - 1) [] (List.take (n - 1) output)
 
-            else if n - 1 == sizeOut then
+            else if n == 1 + sizeOut then
                 Queue peek 0 sizeOut [] output
 
-            else if n - 1 < sizeOut + sizeIn then
+            else if n < 1 + sizeOut + sizeIn then
                 Queue peek
                     (n - 1 - sizeOut)
                     sizeOut
@@ -209,6 +214,39 @@ take n queue =
 
             else
                 queue
+
+
+{-| Drop the first `n` members of a queue:
+
+    drop 2 (fromList [ 1, 2, 3 ]) == formList [ 1 ]
+
+-}
+drop : Int -> Queue a -> Queue a
+drop n queue =
+    case queue of
+        Empty ->
+            Empty
+
+        Queue _ sizeIn sizeOut input output ->
+            if n <= 0 then
+                queue
+
+            else if n < 1 + sizeOut then
+                case List.drop (n - 1) output of
+                    [] ->
+                        Empty
+
+                    nextPeek :: nextOutput ->
+                        Queue nextPeek sizeIn (sizeOut - n) input nextOutput
+
+            else if n == 1 + sizeOut then
+                fromList input
+
+            else if n < 1 + sizeOut + sizeIn then
+                fromList (List.take (1 + sizeIn + sizeOut - n) input)
+
+            else
+                Empty
 
 
 

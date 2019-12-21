@@ -1,5 +1,7 @@
 # Queue
 
+[![Build Status](https://travis-ci.com/owanturist/elm-queue.svg?branch=master)](https://travis-ci.com/owanturist/elm-queue)
+
 Simple **FIFO** (first-in first-out) queue data structure.
 First element added to the `Queue` is the first one to be removed.
 The implementation has almost the same API as [`List`](https://package.elm-lang.org/packages/elm/core/latest/List).

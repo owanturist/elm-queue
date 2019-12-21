@@ -1097,40 +1097,6 @@ indexedMapSuit =
         ]
 
 
-foldlSuite : Test
-foldlSuite =
-    describe "Queue.foldl"
-        [ test "fromList" <|
-            \_ ->
-                Queue.fromList [ 1, 2, 3, 4, 5, 6 ]
-                    |> Queue.foldl ((::) << String.fromInt) []
-                    |> Expect.equalLists [ "1", "2", "3", "4", "5", "6" ]
-
-        --
-        , test "enqueue" <|
-            \_ ->
-                Queue.empty
-                    |> Queue.enqueue 6
-                    |> Queue.enqueue 5
-                    |> Queue.enqueue 4
-                    |> Queue.enqueue 3
-                    |> Queue.enqueue 2
-                    |> Queue.enqueue 1
-                    |> Queue.foldl ((::) << String.fromInt) []
-                    |> Expect.equalLists [ "1", "2", "3", "4", "5", "6" ]
-
-        --
-        , test "fromList + enqueue" <|
-            \_ ->
-                Queue.fromList [ 4, 5, 6 ]
-                    |> Queue.enqueue 3
-                    |> Queue.enqueue 2
-                    |> Queue.enqueue 1
-                    |> Queue.foldl ((::) << String.fromInt) []
-                    |> Expect.equalLists [ "1", "2", "3", "4", "5", "6" ]
-        ]
-
-
 foldrSuite : Test
 foldrSuite =
     describe "Queue.foldr"
@@ -1138,7 +1104,7 @@ foldrSuite =
             \_ ->
                 Queue.fromList [ 1, 2, 3, 4, 5, 6 ]
                     |> Queue.foldr ((::) << String.fromInt) []
-                    |> Expect.equalLists [ "6", "5", "4", "3", "2", "1" ]
+                    |> Expect.equalLists [ "1", "2", "3", "4", "5", "6" ]
 
         --
         , test "enqueue" <|
@@ -1151,7 +1117,7 @@ foldrSuite =
                     |> Queue.enqueue 2
                     |> Queue.enqueue 1
                     |> Queue.foldr ((::) << String.fromInt) []
-                    |> Expect.equalLists [ "6", "5", "4", "3", "2", "1" ]
+                    |> Expect.equalLists [ "1", "2", "3", "4", "5", "6" ]
 
         --
         , test "fromList + enqueue" <|
@@ -1161,6 +1127,40 @@ foldrSuite =
                     |> Queue.enqueue 2
                     |> Queue.enqueue 1
                     |> Queue.foldr ((::) << String.fromInt) []
+                    |> Expect.equalLists [ "1", "2", "3", "4", "5", "6" ]
+        ]
+
+
+foldlSuite : Test
+foldlSuite =
+    describe "Queue.foldl"
+        [ test "fromList" <|
+            \_ ->
+                Queue.fromList [ 1, 2, 3, 4, 5, 6 ]
+                    |> Queue.foldl ((::) << String.fromInt) []
+                    |> Expect.equalLists [ "6", "5", "4", "3", "2", "1" ]
+
+        --
+        , test "enqueue" <|
+            \_ ->
+                Queue.empty
+                    |> Queue.enqueue 6
+                    |> Queue.enqueue 5
+                    |> Queue.enqueue 4
+                    |> Queue.enqueue 3
+                    |> Queue.enqueue 2
+                    |> Queue.enqueue 1
+                    |> Queue.foldl ((::) << String.fromInt) []
+                    |> Expect.equalLists [ "6", "5", "4", "3", "2", "1" ]
+
+        --
+        , test "fromList + enqueue" <|
+            \_ ->
+                Queue.fromList [ 4, 5, 6 ]
+                    |> Queue.enqueue 3
+                    |> Queue.enqueue 2
+                    |> Queue.enqueue 1
+                    |> Queue.foldl ((::) << String.fromInt) []
                     |> Expect.equalLists [ "6", "5", "4", "3", "2", "1" ]
         ]
 

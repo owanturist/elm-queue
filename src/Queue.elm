@@ -4,7 +4,7 @@ module Queue exposing
     , head, tail, take, drop, partition, unzip, toList
     , enqueue, dequeue
     , length, isEmpty, isEqual, any, all, member, maximum, minimum, sum, product
-    , map, indexedMap, foldl, foldr, filter, filterMap, reverse
+    , map, indexedMap, foldr, foldl, filter, filterMap, reverse
     , append, concat, concatMap, intersperse, map2, map3, map4, map5
     , sort, sortBy, sortWith
     )
@@ -40,7 +40,7 @@ It takes constant time in average case for `dequeue` `θ(1)`.
 
 # Transform
 
-@docs map, indexedMap, foldl, foldr, filter, filterMap, reverse
+@docs map, indexedMap, foldr, foldl, filter, filterMap, reverse
 
 
 # Combine
@@ -56,6 +56,12 @@ It takes constant time in average case for `dequeue` `θ(1)`.
 
 
 {-| A queue of values.
+You can think about a Queue representation like about List,
+where left side is the input and right is output:
+
+    fromList   [ 2, 4, 6, 8 ]
+    -- indx -> [ 3, 2, 1, 0 ] ->
+
 -}
 type Queue a
     = Empty
@@ -274,7 +280,7 @@ and the second queue contains all the value that do not.
 -}
 partition : (a -> Bool) -> Queue a -> ( Queue a, Queue a )
 partition test queue =
-    foldl (partitionStep test) ( Empty, Empty ) queue
+    foldr (partitionStep test) ( Empty, Empty ) queue
 
 
 partitionStep : (a -> Bool) -> a -> ( Queue a, Queue a ) -> ( Queue a, Queue a )
@@ -301,7 +307,7 @@ partitionStep test element ( trues, falses ) =
 -}
 unzip : Queue ( a, b ) -> ( Queue a, Queue b )
 unzip queue =
-    foldl unzipStep ( Empty, Empty ) queue
+    foldr unzipStep ( Empty, Empty ) queue
 
 
 unzipStep : ( a, b ) -> ( Queue a, Queue b ) -> ( Queue a, Queue b )
@@ -323,7 +329,7 @@ unzipStep ( a, b ) ( aQueue, bQueue ) =
 -}
 toList : Queue a -> List a
 toList queue =
-    foldl (::) [] queue
+    foldr (::) [] queue
 
 
 
@@ -635,17 +641,17 @@ indexedMapStep fn element ( index, list ) =
         |> enqueue 3
         |> enqueue 2
         |> enqueue 1
-        |> foldl (+) 0
+        |> foldr (+) 0
         === 6
 
     empty
         |> enqueue 3
         |> enqueue 2
         |> enqueue 1
-        |> foldl (::) []
+        |> foldr (::) []
         == [ 1, 2, 3 ]
 
-So `foldl step state (fromList [ 1, 2, 3 ])` is like saying:
+So `foldr step state (fromList [ 1, 2, 3 ])` is like saying:
 
     state
         |> step 3
@@ -653,8 +659,8 @@ So `foldl step state (fromList [ 1, 2, 3 ])` is like saying:
         |> step 1
 
 -}
-foldl : (a -> b -> b) -> b -> Queue a -> b
-foldl fn acc queue =
+foldr : (a -> b -> b) -> b -> Queue a -> b
+foldr fn acc queue =
     case queue of
         Empty ->
             acc
@@ -671,17 +677,17 @@ foldl fn acc queue =
         |> enqueue 3
         |> enqueue 2
         |> enqueue 1
-        |> foldr (+) 0
+        |> foldl (+) 0
         === 6
 
     empty
         |> enqueue 3
         |> enqueue 2
         |> enqueue 1
-        |> foldr (::) []
+        |> foldl (::) []
         == [ 3, 2, 1 ]
 
-So `foldr step state (fromList [ 1, 2, 3 ])` is like saying:
+So `foldl step state (fromList [ 1, 2, 3 ])` is like saying:
 
     state
         |> step 1
@@ -689,8 +695,8 @@ So `foldr step state (fromList [ 1, 2, 3 ])` is like saying:
         |> step 3
 
 -}
-foldr : (a -> b -> b) -> b -> Queue a -> b
-foldr fn acc queue =
+foldl : (a -> b -> b) -> b -> Queue a -> b
+foldl fn acc queue =
     case queue of
         Empty ->
             acc
@@ -710,7 +716,7 @@ foldr fn acc queue =
 -}
 filter : (a -> Bool) -> Queue a -> Queue a
 filter fn queue =
-    case foldr (filterStep fn) ( 0, [] ) queue of
+    case foldl (filterStep fn) ( 0, [] ) queue of
         ( size, peek :: output ) ->
             Queue peek 0 (size - 1) [] output
 
@@ -739,7 +745,7 @@ and you want to turn them into numbers:
 -}
 filterMap : (a -> Maybe b) -> Queue a -> Queue b
 filterMap fn queue =
-    case foldr (filterMapStep fn) ( 0, [] ) queue of
+    case foldl (filterMapStep fn) ( 0, [] ) queue of
         ( size, peek :: output ) ->
             Queue peek 0 (size - 1) [] output
 
@@ -822,7 +828,7 @@ append left right =
 -}
 concat : Queue (Queue a) -> Queue a
 concat queueOfQueues =
-    foldl append empty queueOfQueues
+    foldr append empty queueOfQueues
 
 
 {-| Map a given function onto a queue and flatten the resulting queues:
@@ -832,7 +838,7 @@ concat queueOfQueues =
 -}
 concatMap : (a -> Queue b) -> Queue a -> Queue b
 concatMap fn queue =
-    foldl (append << fn) empty queue
+    foldr (append << fn) empty queue
 
 
 {-| Places the given value between all members of the given queue.

@@ -10,11 +10,10 @@ cache:
 
 language: node_js
 
-
 env:
   matrix:
     - TARGET_NODE_VERSION=node
-    - TARGET_NODE_VERSION=6.0
+    - TARGET_NODE_VERSION=10.9
 
 before_install:
   - if [ ${TRAVIS_OS_NAME} == "osx" ];

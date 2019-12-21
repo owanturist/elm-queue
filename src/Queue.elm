@@ -159,8 +159,7 @@ range lo hi =
 
     head (singleton 0) == Just 0
 
-    head (fromList [ 1, 2, 3 ])
-        == Just 3
+    head (fromList [ 1, 2, 3 ]) == Just 3
 
 It takes constant time `O(1)`.
 
@@ -177,8 +176,7 @@ head queue =
 
 {-| Extract the rest of the list:
 
-    tail (fromList [ 1, 2, 3 ])
-        == Just [ 1, 2 ]
+    tail (fromList [ 1, 2, 3 ]) == Just [ 1, 2 ]
 
     tail empty == Nothing
 
@@ -195,8 +193,7 @@ tail queue =
 
 {-| Take the first `n` members of a queue:
 
-    take 2 (fromList [ 1, 2, 3 ])
-        == formList [ 2, 3 ]
+    take 2 (fromList [ 1, 2, 3 ]) == formList [ 2, 3 ]
 
 -}
 take : Int -> Queue a -> Queue a
@@ -231,8 +228,7 @@ take n queue =
 
 {-| Drop the first `n` members of a queue:
 
-    drop 2 (fromList [ 1, 2, 3 ])
-        == formList [ 1 ]
+    drop 2 (fromList [ 1, 2, 3 ]) == formList [ 1 ]
 
 -}
 drop : Int -> Queue a -> Queue a

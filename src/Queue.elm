@@ -95,6 +95,9 @@ singleton element =
 
 
 {-| Create a queue from `List`.
+
+It take time proportional to `O(N)`.
+
 -}
 fromList : List a -> Queue a
 fromList list =
@@ -180,6 +183,8 @@ head queue =
 
     tail empty == Nothing
 
+It takes constant time in average case `θ(1)` (`Ω(1)` and `O(N)`).
+
 -}
 tail : Queue a -> Maybe (Queue a)
 tail queue =
@@ -194,6 +199,8 @@ tail queue =
 {-| Take the first `n` members of a queue:
 
     take 2 (fromList [ 1, 2, 3 ]) == formList [ 2, 3 ]
+
+It takes constant time in case when `n <= 0 || n >= N`.
 
 -}
 take : Int -> Queue a -> Queue a
@@ -229,6 +236,8 @@ take n queue =
 {-| Drop the first `n` members of a queue:
 
     drop 2 (fromList [ 1, 2, 3 ]) == formList [ 1 ]
+
+It takes constant time in case when `n <= 0 || n >= N`.
 
 -}
 drop : Int -> Queue a -> Queue a
@@ -322,6 +331,8 @@ unzipStep ( a, b ) ( aQueue, bQueue ) =
         |> toList
         == [ 1, 2, 3 ]
 
+It takes time proportional to `O(N)`.
+
 -}
 toList : Queue a -> List a
 toList queue =
@@ -367,7 +378,7 @@ enqueue element queue =
     dequeue (fromList [ 1, 2, 3 ])
         == ( Just 3, fromList [ 1, 2 ] )
 
-It takes constant time in average case `θ(1)` (`Ω(1)` and `O(n)`).
+It takes constant time in average case `θ(1)` (`Ω(1)` and `O(N)`).
 
 -}
 dequeue : Queue a -> ( Maybe a, Queue a )

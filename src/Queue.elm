@@ -188,12 +188,7 @@ It takes constant time in average case `θ(1)` (`Ω(1)` and `O(N)`).
 -}
 tail : Queue a -> Maybe (Queue a)
 tail queue =
-    case dequeue queue of
-        ( Nothing, _ ) ->
-            Nothing
-
-        ( _, tailQueue ) ->
-            Just tailQueue
+    Maybe.map Tuple.second (dequeue queue)
 
 
 {-| Take the first `n` members of a queue:
@@ -371,36 +366,38 @@ enqueue element queue =
 
 {-| Extract and remove the first element from the queue:
 
-    dequeue empty == ( Nothing, empty )
+    dequeue empty == Nothing
 
-    dequeue (singleton 1) == ( Just 1, empty )
+    dequeue (singleton 1) == Just ( 1, empty )
 
     dequeue (fromList [ 1, 2, 3 ])
-        == ( Just 3, fromList [ 1, 2 ] )
+        == Just ( 3, fromList [ 1, 2 ] )
 
 It takes constant time in average case `θ(1)` (`Ω(1)` and `O(N)`).
 
 -}
-dequeue : Queue a -> ( Maybe a, Queue a )
+dequeue : Queue a -> Maybe ( a, Queue a )
 dequeue queue =
     case queue of
         Empty ->
-            ( Nothing, Empty )
+            Nothing
 
         Queue peek sizeIn _ input [] ->
-            ( Just peek
-            , case List.reverse input of
-                [] ->
-                    Empty
+            Just
+                ( peek
+                , case List.reverse input of
+                    [] ->
+                        Empty
 
-                nextPeek :: nextOutStack ->
-                    Queue nextPeek 0 (sizeIn - 1) [] nextOutStack
-            )
+                    nextPeek :: nextOutStack ->
+                        Queue nextPeek 0 (sizeIn - 1) [] nextOutStack
+                )
 
         Queue peek sizeIn sizeOut input (nextPeek :: nextOutStack) ->
-            ( Just peek
-            , Queue nextPeek sizeIn (sizeOut - 1) input nextOutStack
-            )
+            Just
+                ( peek
+                , Queue nextPeek sizeIn (sizeOut - 1) input nextOutStack
+                )
 
 
 

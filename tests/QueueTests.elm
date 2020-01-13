@@ -145,8 +145,8 @@ headSuit =
             \second ->
                 Queue.fromList [ -4, -3, -2, second, -1 ]
                     |> Queue.dequeue
-                    |> Tuple.second
-                    |> Queue.head
+                    |> Maybe.map Tuple.second
+                    |> Maybe.andThen Queue.head
                     |> Expect.equal (Just second)
 
         --
@@ -390,7 +390,8 @@ enqueueSuite =
             \val ->
                 Queue.fromList [ 0, 1, 2, 3, 4 ]
                     |> Queue.dequeue
-                    |> Tuple.second
+                    |> Maybe.map Tuple.second
+                    |> Maybe.withDefault Queue.empty
                     |> Queue.enqueue val
                     |> Queue.toList
                     |> Expect.equalLists [ val, 0, 1, 2, 3 ]
@@ -404,50 +405,59 @@ dequeueSuit =
             \_ ->
                 Queue.empty
                     |> Queue.dequeue
-                    |> Expect.all
-                        [ Expect.equal Nothing << Tuple.first
-                        , Expect.equalLists [] << Queue.toList << Tuple.second
-                        ]
+                    |> Expect.equal Nothing
 
         --
         , fuzz Fuzz.int "singleton" <|
             \val ->
                 Queue.singleton val
                     |> Queue.dequeue
-                    |> Expect.all
-                        [ Expect.equal (Just val) << Tuple.first
-                        , Expect.equalLists [] << Queue.toList << Tuple.second
-                        ]
+                    |> Maybe.map
+                        (Expect.all
+                            [ Expect.equal val << Tuple.first
+                            , Expect.equalLists [] << Queue.toList << Tuple.second
+                            ]
+                        )
+                    |> Maybe.withDefault (Expect.fail "Queue is not empty")
 
         --
         , fuzz (Fuzz.intRange 5 10) "fromList" <|
             \val ->
                 Queue.fromList [ 0, 1, 2, 3, 4, val ]
                     |> Queue.dequeue
-                    |> Expect.all
-                        [ Expect.equal (Just val) << Tuple.first
-                        , Expect.equalLists [ 0, 1, 2, 3, 4 ] << Queue.toList << Tuple.second
-                        ]
+                    |> Maybe.map
+                        (Expect.all
+                            [ Expect.equal val << Tuple.first
+                            , Expect.equalLists [ 0, 1, 2, 3, 4 ] << Queue.toList << Tuple.second
+                            ]
+                        )
+                    |> Maybe.withDefault (Expect.fail "Queue is not empty")
 
         --
         , fuzz Fuzz.string "repeat" <|
             \val ->
                 Queue.repeat 3 val
                     |> Queue.dequeue
-                    |> Expect.all
-                        [ Expect.equal (Just val) << Tuple.first
-                        , Expect.equalLists [ val, val ] << Queue.toList << Tuple.second
-                        ]
+                    |> Maybe.map
+                        (Expect.all
+                            [ Expect.equal val << Tuple.first
+                            , Expect.equalLists [ val, val ] << Queue.toList << Tuple.second
+                            ]
+                        )
+                    |> Maybe.withDefault (Expect.fail "Queue is not empty")
 
         --
         , test "range" <|
             \_ ->
                 Queue.range 1 5
                     |> Queue.dequeue
-                    |> Expect.all
-                        [ Expect.equal (Just 1) << Tuple.first
-                        , Expect.equalLists [ 5, 4, 3, 2 ] << Queue.toList << Tuple.second
-                        ]
+                    |> Maybe.map
+                        (Expect.all
+                            [ Expect.equal 1 << Tuple.first
+                            , Expect.equalLists [ 5, 4, 3, 2 ] << Queue.toList << Tuple.second
+                            ]
+                        )
+                    |> Maybe.withDefault (Expect.fail "Queue is not empty")
 
         --
         , fuzz2 (Fuzz.intRange 5 10) (Fuzz.intRange 11 20) "queue" <|
@@ -455,30 +465,43 @@ dequeueSuit =
                 Queue.fromList [ 0, 1, 2, 3, 4, first ]
                     |> Queue.enqueue second
                     |> Queue.dequeue
-                    |> Expect.all
-                        [ Expect.equal (Just first) << Tuple.first
-                        , Expect.equalLists [ second, 0, 1, 2, 3, 4 ] << Queue.toList << Tuple.second
-                        ]
+                    |> Maybe.map
+                        (Expect.all
+                            [ Expect.equal first << Tuple.first
+                            , Expect.equalLists [ second, 0, 1, 2, 3, 4 ] << Queue.toList << Tuple.second
+                            ]
+                        )
+                    |> Maybe.withDefault (Expect.fail "Queue is not empty")
 
         --
         , test "dequeue" <|
             \_ ->
-                Queue.fromList [ 1, 2, 3 ]
+                Queue.fromList [ 2, 3 ]
+                    |> Queue.enqueue 1
                     |> Queue.dequeue
-                    |> Expect.all
-                        [ Expect.equal (Just 3) << Tuple.first
-                        , Tuple.second
-                            >> Queue.dequeue
-                            >> Expect.all
-                                [ Expect.equal (Just 2) << Tuple.first
-                                , Tuple.second
-                                    >> Queue.dequeue
-                                    >> Expect.all
-                                        [ Expect.equal (Just 1) << Tuple.first
-                                        , Expect.equal Nothing << Tuple.first << Queue.dequeue << Tuple.second
+                    |> Maybe.map
+                        (Expect.all
+                            [ Expect.equal 3 << Tuple.first
+                            , Tuple.second
+                                >> Queue.dequeue
+                                >> Maybe.map
+                                    (Expect.all
+                                        [ Expect.equal 2 << Tuple.first
+                                        , Tuple.second
+                                            >> Queue.dequeue
+                                            >> Maybe.map
+                                                (Expect.all
+                                                    [ Expect.equal 1 << Tuple.first
+                                                    , Expect.equal Nothing << Queue.dequeue << Tuple.second
+                                                    ]
+                                                )
+                                            >> Maybe.withDefault (Expect.fail "Queue is not empty")
                                         ]
-                                ]
-                        ]
+                                    )
+                                >> Maybe.withDefault (Expect.fail "Queue is not empty")
+                            ]
+                        )
+                    |> Maybe.withDefault (Expect.fail "Queue is not empty")
         ]
 
 
@@ -546,7 +569,8 @@ lengthSuit =
             \list ->
                 Queue.fromList list
                     |> Queue.dequeue
-                    |> Tuple.second
+                    |> Maybe.map Tuple.second
+                    |> Maybe.withDefault Queue.empty
                     |> Queue.length
                     |> Expect.equal (max 0 (List.length list - 1))
 
@@ -1332,7 +1356,8 @@ reverseSuite =
             \second ->
                 Queue.fromList [ -4, -3, -2, second, -1 ]
                     |> Queue.dequeue
-                    |> Tuple.second
+                    |> Maybe.map Tuple.second
+                    |> Maybe.withDefault Queue.empty
                     |> Queue.reverse
                     |> Queue.toList
                     |> Expect.equalLists [ second, -2, -3, -4 ]
